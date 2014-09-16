@@ -1406,6 +1406,9 @@ main(int argc, char **argv)
   int leap;
   int http;
 
+  /* Sometimes tlsdate gets "stuck" and never exits, so force it here. */
+  alarm(60);
+
   if (argc != 13)
     return 1;
   host = argv[1];
