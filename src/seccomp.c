@@ -44,10 +44,24 @@
 #elif defined(__x86_64__)
 #  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_X86_64
 #elif defined(__arm__)
-# ifndef EM_ARM
-#   define EM_ARM 40
-# endif
+#  ifndef EM_ARM
+#    define EM_ARM 40
+#  endif
 #  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM
+#elif defined(__mips__)
+#  if defined(__mips64)
+#    if defined(__MIPSEB__)
+#      define SECCOMP_AUDIT_ARCH AUDIT_ARCH_MIPS64
+#    else
+#      define SECCOMP_AUDIT_ARCH AUDIT_ARCH_MIPSEL64
+#    endif
+#  else
+#    if defined(__MIPSEB__)
+#      define SECCOMP_AUDIT_ARCH AUDIT_ARCH_MIPS
+#    else
+#      define SECCOMP_AUDIT_ARCH AUDIT_ARCH_MIPSEL
+#    endif
+#  endif
 #else
 #  error "Platform does not support seccomp filter yet"
 #endif
