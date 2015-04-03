@@ -94,6 +94,7 @@ void action_kickoff_time_sync (evutil_socket_t fd, short what, void *arg)
   debug ("[event:%s] fired", __func__);
   time_t delta = state->clock_delta;
   int jitter = 0;
+  int reschedule = 0;
   if (check_continuity (&delta) > 0)
     {
       info ("[event:%s] clock delta desync detected (%d != %d)", __func__,
@@ -114,19 +115,34 @@ void action_kickoff_time_sync (evutil_socket_t fd, short what, void *arg)
   if (state->tries > 0)
     {
       state->tries -= 1;
-      /* Don't bother re-triggering tlsdate */
-      debug ("[event:%s] called while tries are in progress", __func__);
-      return;
+      /* Add an extra attempt to be performed after the current attempt
+       * completes in case there is new data. Don't automatically reschedule
+       * because flapping could mean we never resolve the time.
+       */
+      if (state->backoff == state->opts.wait_between_tries)
+        {
+          debug ("[event:%s] called while tries are in progress", __func__);
+          return;
+        }
+      reschedule = 1;
+      state->backoff = state->opts.wait_between_tries;
     }
-  /* Don't over-schedule if the first attempt hasn't fired. If a wake event
-   * impacts the result of a proxy resolution, then the updated value can be
-   * acquired on the next run. If the wake comes in after E_TLSDATE is
-   * serviced, then the tries count will be decremented.
+  /* If a wake event arrives while a request to start tlsdate is pending, do
+   * not reschedule automatically.  Doing so would allow a flood of wake events
+   * to block the event from ever running.  Instead, only reschedule if
+   * requested above and never allow less than wait_between_tries between
+   * tlsdate events.
    */
   if (event_pending (state->events[E_TLSDATE], EV_TIMEOUT, NULL))
     {
-      debug ("[event:%s] called while tlsdate is pending", __func__);
-      return;
+      if (!reschedule)
+        {
+          debug ("[event:%s] tlsdate pending and not being rescheduled",
+                 __func__);
+          return;
+        }
+      debug ("[event:%s] pending tlsdate being rescheduled", __func__);
+      jitter = state->backoff;
     }
   if (!state->events[E_RESOLVER])
     {
