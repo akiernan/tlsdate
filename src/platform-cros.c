@@ -525,7 +525,7 @@ new_resolver_message(const struct source *src)
       !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveInterface) ||
       !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveMember))
     {
-      fatal ("[cros could not append arguments for resolver message");
+      fatal ("[cros] could not append arguments for resolver message");
     }
   return res;
 }
