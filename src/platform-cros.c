@@ -263,9 +263,6 @@ handle_suspend_done (DBusConnection *connection,
                      DBusMessage *message,
                      struct platform_state *ctx)
 {
-  DBusMessageIter iter;
-  DBusError error;
-  const char *pname;
   verb_debug ("[event:cros:%s]: fired", __func__);
   /* Coming back from resume, trigger a continuity and time
    * check just in case none of the other events happen.

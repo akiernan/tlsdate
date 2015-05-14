@@ -32,8 +32,10 @@ static const char *kServiceCanSetTime = kServiceCanSetTimeData;
 static const char kServiceLastSyncInfoData[] = "LastSyncInfo";
 static const char *kServiceLastSyncInfo = kServiceLastSyncInfoData;
 
+#ifdef TLSDATED_MAIN
 static const char kTimeUpdatedData[] = "TimeUpdated";
 static const char *kTimeUpdated = kTimeUpdatedData;
+#endif
 
 static
 short
