@@ -699,7 +699,7 @@ check_wildcard_match_rfc2595 (const char *orig_hostname,
           if (wildcard_label[0] == wildchar[0] &&
               0 == wildcard_encountered && 0 == ok)
           {
-            verb ("V: Forced match of '%s' against '%s'", expected_label, wildcard_label);
+            verb_debug ("V: Forced match of '%s' against '%s'", expected_label, wildcard_label);
             wildcard_encountered = 1;
           } else {
             verb_debug ("V: Attempting match of '%s' against '%s'",
