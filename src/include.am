@@ -13,6 +13,7 @@ include src/compat/include.am
 if TARGET_LINUX
 bin_PROGRAMS+= src/tlsdate
 bin_PROGRAMS+= src/tlsdate-helper
+bin_PROGRAMS+= src/tlsdate-dbus-announce
 
 if HAVE_SECCOMP_FILTER
 src_tlsdate_helper_SOURCES+= src/seccomp.c
@@ -492,6 +493,9 @@ endif
 endif
 endif
 
+src_tlsdate_dbus_announce_CFLAGS = @DBUS_CFLAGS@
+src_tlsdate_dbus_announce_LDADD = @DBUS_LIBS@
+src_tlsdate_dbus_announce_SOURCES = src/tlsdate-dbus-announce.c
 
 check_PROGRAMS+= src/test/proxy-override src/test/check-host-1 \
                  src/test/check-host-2 src/test/sleep-wrap \
