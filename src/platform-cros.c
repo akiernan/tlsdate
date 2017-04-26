@@ -22,53 +22,35 @@
 #include "src/tlsdate.h"
 #include "src/util.h"
 
-static const char kMatchFormatData[] = "interface='%s',member='%s',arg0='%s'";
-static const char *kMatchFormat = kMatchFormatData;
-static const char kMatchNoArgFormatData[] = "interface='%s',member='%s'";
-static const char *kMatchNoArgFormat = kMatchNoArgFormatData;
+static const char kMatchFormat[] = "interface='%s',member='%s',arg0='%s'";
+static const char kMatchNoArgFormat[] = "interface='%s',member='%s'";
 
-static const char kLibCrosDestData[] = "org.chromium.LibCrosService";
-static const char *kLibCrosDest = kLibCrosDestData;
-static const char kLibCrosInterfaceData[] = "org.chromium.LibCrosServiceInterface";
-static const char *kLibCrosInterface = kLibCrosInterfaceData;
-static const char kLibCrosPathData[] = "/org/chromium/LibCrosService";
-static const char *kLibCrosPath = kLibCrosPathData;
-static const char kResolveNetworkProxyData[] = "ResolveNetworkProxy";
-static const char *kResolveNetworkProxy = kResolveNetworkProxyData;
+static const char kLibCrosDest[] = "org.chromium.LibCrosService";
+static const char kLibCrosInterface[] = "org.chromium.LibCrosServiceInterface";
+static const char kLibCrosPath[] = "/org/chromium/LibCrosService";
+static const char kResolveNetworkProxy[] = "ResolveNetworkProxy";
 
-static const char kDBusInterfaceData[] = "org.freedesktop.DBus";
-static const char *kDBusInterface = kDBusInterfaceData;
-static const char kNameOwnerChangedData[] = "NameOwnerChanged";
-static const char *kNameOwnerChanged = kNameOwnerChangedData;
-static const char kNameAcquiredData[] = "NameAcquired";
-static const char *kNameAcquired = kNameAcquiredData;
+static const char kDBusInterface[] = "org.freedesktop.DBus";
+static const char kNameOwnerChanged[] = "NameOwnerChanged";
+static const char kNameAcquired[] = "NameAcquired";
 
-static const char kManagerInterfaceData[] = "org.chromium.flimflam.Manager";
-static const char *kManagerInterface = kManagerInterfaceData;
+static const char kManagerInterface[] = "org.chromium.flimflam.Manager";
 
-static const char kServiceInterfaceData[] = "org.chromium.flimflam.Service";
-static const char *kServiceInterface = kServiceInterfaceData;
-static const char kMemberData[] = "PropertyChanged";
-static const char *kMember = kMemberData;
+static const char kServiceInterface[] = "org.chromium.flimflam.Service";
+static const char kMember[] = "PropertyChanged";
 
-static const char kProxyConfigData[] = "ProxyConfig";
-static const char *kProxyConfig = kProxyConfigData;
-static const char kDefaultServiceData[] = "DefaultService";
-static const char *kDefaultService = kDefaultServiceData;
+static const char kProxyConfig[] = "ProxyConfig";
+static const char kDefaultService[] = "DefaultService";
 
-static const char kResolveInterfaceData[] = "org.torproject.tlsdate.Resolver";
-static const char *kResolveInterface = kResolveInterfaceData;
-static const char kResolveMemberData[] = "ProxyChange";
-static const char *kResolveMember = kResolveMemberData;
+static const char kResolveInterface[] = "org.torproject.tlsdate.Resolver";
+static const char kResolveMember[] = "ProxyChange";
 
 /* TODO(wad) Integrate with cros_system_api/dbus/service_constants.h */
-static const char kPowerManagerInterfaceData[] = "org.chromium.PowerManager";
-static const char *kPowerManagerInterface = kPowerManagerInterfaceData;
-static const char kSuspendDoneData[] = "SuspendDone";
-static const char *kSuspendDone = kSuspendDoneData;
+static const char kPowerManagerInterface[] = "org.chromium.PowerManager";
+static const char kSuspendDone[] = "SuspendDone";
 
-static const char kErrorServiceUnknownData[] = "org.freedesktop.DBus.Error.ServiceUnknown";
-static const char *kErrorServiceUnknown = kErrorServiceUnknownData;
+static const char kErrorServiceUnknown[] =
+    "org.freedesktop.DBus.Error.ServiceUnknown";
 
 struct platform_state
 {
@@ -494,7 +476,9 @@ DBusMessage *
 new_resolver_message(const struct source *src)
 {
   char time_host[MAX_PROXY_URL];
-  void *time_host_ptr = &time_host;
+  const char *time_host_ptr = time_host;
+  const char *kResolveInterfacePtr = kResolveInterface;
+  const char *kResolveMemberPtr = kResolveMember;
   int url_len;
   DBusMessage *res;
   DBusMessageIter args;
@@ -516,11 +500,16 @@ new_resolver_message(const struct source *src)
     {
       fatal ("[cros] source %d url is too long! (%d)", src->id, url_len);
     }
-  /* Finish the message */
+  /* Finish the message. DBUS_TYPE_STRING takes a pointer to char* rather than
+   * char*, and we need to create a local pointer to get this. See the warning
+   * in dbus_message_append_args's documentation for more details. */
   dbus_message_iter_init_append (res, &args);
-  if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &time_host_ptr) ||
-      !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveInterface) ||
-      !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveMember))
+  if (!dbus_message_iter_append_basic (
+          &args, DBUS_TYPE_STRING, &time_host_ptr) ||
+      !dbus_message_iter_append_basic (
+          &args, DBUS_TYPE_STRING, &kResolveInterfacePtr) ||
+      !dbus_message_iter_append_basic (
+          &args, DBUS_TYPE_STRING, &kResolveMemberPtr))
     {
       fatal ("[cros] could not append arguments for resolver message");
     }
