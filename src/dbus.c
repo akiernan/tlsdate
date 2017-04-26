@@ -18,23 +18,14 @@
 #include "src/tlsdate.h"
 #include "src/util.h"
 
-/* Pointers are needed so that we don't have to deal with array-to-pointer
- * weirdness with DBus argument passing.
- */
-static const char kServiceInterfaceData[] = "org.torproject.tlsdate";
-static const char *kServiceInterface = kServiceInterfaceData;
-static const char kServicePathData[] = "/org/torproject/tlsdate";
-static const char *kServicePath = kServicePathData;
-static const char kServiceSetTimeData[] = "SetTime";
-static const char *kServiceSetTime = kServiceSetTimeData;
-static const char kServiceCanSetTimeData[] = "CanSetTime";
-static const char *kServiceCanSetTime = kServiceCanSetTimeData;
-static const char kServiceLastSyncInfoData[] = "LastSyncInfo";
-static const char *kServiceLastSyncInfo = kServiceLastSyncInfoData;
+static const char kServiceInterface[] = "org.torproject.tlsdate";
+static const char kServicePath[] = "/org/torproject/tlsdate";
+static const char kServiceSetTime[] = "SetTime";
+static const char kServiceCanSetTime[] = "CanSetTime";
+static const char kServiceLastSyncInfo[] = "LastSyncInfo";
 
 #ifdef TLSDATED_MAIN
-static const char kTimeUpdatedData[] = "TimeUpdated";
-static const char *kTimeUpdated = kTimeUpdatedData;
+static const char kTimeUpdated[] = "TimeUpdated";
 #endif
 
 static
