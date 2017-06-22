@@ -24,11 +24,12 @@ void action_sync_and_save (evutil_socket_t fd, short what, void *arg)
   time_t t = state->last_time;
   ssize_t bytes;
   verb_debug ("[event:%s] fired", __func__);
-  /* For all non-net sources, don't write to disk by
+  /* For non-net and non-platform source, don't write to disk by
    * flagging the time negative.  We don't use negative
    * times and this won't effect shutdown (0) writes.
    */
-  if (state->last_sync_type != SYNC_TYPE_NET)
+  if (state->last_sync_type != SYNC_TYPE_NET &&
+      state->last_sync_type != SYNC_TYPE_PLATFORM)
     t = -t;
   if (what & EV_READ)
     {
