@@ -21,6 +21,9 @@ TESTS+= src/conf_unittest src/proxy-bio_unittest
 if TARGET_LINUX
 TESTS+= src/tlsdated_unittest
 endif
+if HAVE_CROS
+TESTS+= src/platform-cros-util_unittest
+endif
 test: check
 endif
 
