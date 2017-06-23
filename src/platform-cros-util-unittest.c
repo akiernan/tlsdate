@@ -44,6 +44,12 @@ TEST(test_canonicalize_pac_parsing) {
     { "SOCKS proxy.example.com", "socks4://proxy.example.com" },
     { "SOCKS5 proxy.example.com", "socks5://proxy.example.com" },
     { "HTTPS proxy.example.com", "https://proxy.example.com" },
+    /* Multiple proxies are separated by semicolons with optional spaces. */
+    { "PROXY a.com:8080; PROXY b.com:8080", "http://a.com:8080" },
+    { "PROXY a.com:8080 ; PROXY b.com:8080", "http://a.com:8080" },
+    { "PROXY a.com; PROXY b.com", "http://a.com" },
+    { "PROXY a.com ; PROXY b.com", "http://a.com" },
+    { "PROXY a.com; DIRECT", "http://a.com" },
     /* Bad input should always result in an empty string. */
     { "", "" },
     { "BOGUS", "" },
@@ -52,12 +58,13 @@ TEST(test_canonicalize_pac_parsing) {
     { "PROXY ", "" },
     { "PROXY \n", "" },
     { "PROXY $.com", "" },
-    { "PROXY proxy.example.com:123;", "" },
-    { "PROXY proxy.example.com:123 ", "" },
     { "PROXY proxy.example.com::123", "" },
     { "PROXY proxy.example.com!", "" },
     { "PROXY http://proxy.example.com", "" },
     { "PROXY proxy_2.example.com", "" },
+    /* Don't permit empty strings at the beginning of a list. */
+    { "; PROXY b.com", "" },
+    { " ;PROXY b.com", "" },
   };
 
   char buf[256];
