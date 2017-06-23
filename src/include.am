@@ -13,6 +13,14 @@ src_conf_unittest_SOURCES+= src/conf-unittest.c
 check_PROGRAMS+= src/conf_unittest
 noinst_PROGRAMS+= src/conf_unittest
 
+if HAVE_CROS
+src_platform_cros_util_unittest_SOURCES = src/platform-cros-util.c
+src_platform_cros_util_unittest_SOURCES+= src/platform-cros-util-unittest.c
+src_platform_cros_util_unittest_SOURCES+= src/util.c
+check_PROGRAMS+= src/platform-cros-util_unittest
+noinst_PROGRAMS+= src/platform-cros-util_unittest
+endif
+
 src_tlsdate_routeup_CPPFLAGS = -DROUTEUP_MAIN
 src_tlsdate_routeup_SOURCES = src/routeup.c
 src_tlsdate_routeup_SOURCES+= src/util.c
@@ -38,6 +46,7 @@ src_tlsdated_SOURCES+= src/dbus.c
 endif
 if HAVE_CROS
 src_tlsdated_SOURCES+= src/platform-cros.c
+src_tlsdated_SOURCES+= src/platform-cros-util.c
 endif
 if HAVE_SECCOMP_FILTER
 src_tlsdated_SOURCES+= src/seccomp.c
