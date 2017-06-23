@@ -29,7 +29,10 @@ get_valid_hostport (const char *hostport, char *out, size_t len)
       return false;
     }
   *out++ = *hostport;
-  for (c = hostport + 1;  c < end && len > 0; ++c, ++out, --len)
+  /* Break on spaces and semicolons, either of which can indicate the end of the
+   * first proxy within a list. */
+  for (c = hostport + 1; c < end && len > 0 && *c != ' ' && *c != ';';
+       ++c, ++out, --len)
     {
       *out = *c;
       if (host)
