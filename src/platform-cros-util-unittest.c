@@ -68,7 +68,8 @@ TEST(test_canonicalize_pac_parsing) {
   };
 
   char buf[256];
-  for (size_t i = 0; i < ARRAYSIZE(kCases); ++i) {
+  size_t i;
+  for (i = 0; i < ARRAYSIZE(kCases); ++i) {
     EXPECT_TRUE(check_case(&kCases[i], buf, ARRAYSIZE(buf))) {
       TH_LOG("PAC \"%s\": expected \"%s\", actual \"%s\"",
              kCases[i].input_pac, kCases[i].expected, buf);
@@ -92,7 +93,8 @@ TEST(test_canonicalize_pac_overflow) {
   };
 
   char buf[16];
-  for (size_t i = 0; i < ARRAYSIZE(kCases); ++i) {
+  size_t i;
+  for (i = 0; i < ARRAYSIZE(kCases); ++i) {
     EXPECT_TRUE(check_case(&kCases[i], buf, ARRAYSIZE(buf))) {
       TH_LOG("PAC \"%s\": expected \"%s\", actual \"%s\"",
              kCases[i].input_pac, kCases[i].expected, buf);
