@@ -155,10 +155,7 @@ handle_proxy_change (DBusConnection *connection,
 {
   DBusMessageIter iter;
   const char *pval;
-  struct source *src = ctx->state->opts.sources;
   verb_debug ("[event:cros:%s]: fired", __func__);
-  if (ctx->state->opts.cur_source && ctx->state->opts.cur_source->next)
-    src = ctx->state->opts.cur_source->next;
   if (!ctx->state->resolving)
     {
       info ("[event:cros:%s] Unexpected ResolveProxy response seen",
