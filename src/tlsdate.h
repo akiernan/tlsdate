@@ -27,7 +27,7 @@
 #define DEFAULT_HOST "google.com"
 #define DEFAULT_PORT "443"
 #define DEFAULT_PROXY "none"
-#define DEFAULT_PROTOCOL "tlsv1"
+#define DEFAULT_PROTOCOL "tlsv12"
 #define DEFAULT_CERTDIR "/etc/ssl/certs"
 #define DEFAULT_CERTFILE TLSDATE_CERTFILE
 #define DEFAULT_DAEMON_CACHEDIR "/var/cache/tlsdated"
