@@ -75,11 +75,6 @@ know:
  */
 
 #include "config.h"
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-
 #include "src/tlsdate-helper.h"
 
 #include "src/proxy-bio.h"
@@ -165,42 +160,12 @@ setup_proxy (BIO *ssl)
 }
 
 static BIO *
-make_ssl_bio (SSL_CTX *ctx, const char *host, const char *port)
+make_ssl_bio (SSL_CTX *ctx)
 {
   BIO *con = NULL;
   BIO *ssl = NULL;
-  int err, sock = -1;
-  struct addrinfo *ai = NULL, *cai = NULL;
-  struct addrinfo hints = {
-    .ai_flags = AI_ADDRCONFIG,
-    .ai_family = AF_UNSPEC,
-    .ai_socktype = SOCK_STREAM,
-  };
-  err = getaddrinfo (host, port, &hints, &ai);
-  if (err != 0 || !ai) {
-    die ("getaddrinfo(%s): %s\n", host, gai_strerror (err));
-  }
-  for (cai = ai; cai; cai = cai->ai_next) {
-    sock = socket (cai->ai_family, SOCK_STREAM, 0);
-    if (sock < 0) {
-      perror ("socket");
-      continue;
-    }
-
-    if (connect (sock, cai->ai_addr, cai->ai_addrlen) != 0) {
-      perror ("connect");
-      close (sock);
-      sock = -1;
-      continue;
-    }
-
-    break;
-  }
-  if (ai) freeaddrinfo (ai);
-  if (sock < 0) die ("failed to find any remote addresses\n");
-
-  if (!(con = BIO_new_fd (sock, 1)))
-    die ("BIO_new_fd failed\n");
+  if (! (con = BIO_new (BIO_s_connect())))
+    die ("BIO_s_connect failed\n");
   if (! (ssl = BIO_new_ssl (ctx, 1)))
     die ("BIO_new_ssl failed\n");
   setup_proxy (ssl);
@@ -770,8 +735,7 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion)
             }
         }
     }
-  verb ("V: opening socket to %s:%s\n", host, port);
-  if (NULL == (s_bio = make_ssl_bio(ctx, host, port)))
+  if (NULL == (s_bio = make_ssl_bio (ctx)))
     die ("SSL BIO setup failed\n");
   BIO_get_ssl (s_bio, &ssl);
   if (NULL == ssl)
@@ -782,6 +746,10 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion)
     }
   SSL_set_mode (ssl, SSL_MODE_AUTO_RETRY);
   SSL_set_tlsext_host_name (ssl, host);
+  verb ("V: opening socket to %s:%s\n", host, port);
+  if ( (1 != BIO_set_conn_hostname (s_bio, host)) ||
+       (1 != BIO_set_conn_port (s_bio, port)))
+    die ("Failed to initialize connection to `%s:%s'\n", host, port);
   if (NULL == BIO_new_fp (stdout, BIO_NOCLOSE))
     die ("BIO_new_fp returned error, possibly: %s", strerror (errno));
   // This should run in seccomp
