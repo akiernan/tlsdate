@@ -48,6 +48,8 @@
 #    define EM_ARM 40
 #  endif
 #  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM
+#elif defined(__aarch64__)
+#  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_AARCH64
 #elif defined(__mips__)
 #  if defined(__mips64)
 #    if defined(__MIPSEB__)
@@ -83,7 +85,12 @@ enable_setter_seccomp (void)
     BPF_STMT (BPF_LD+BPF_W+BPF_ABS,
     offsetof (struct seccomp_data, nr)),
 
+#ifdef __NR_open
     SC_DENY (open, EINVAL),
+#endif
+#ifdef __NR_openat
+    SC_DENY (openat, EINVAL),
+#endif
     SC_DENY (fcntl, EINVAL),
     SC_DENY (fstat, EINVAL),
 #ifdef __NR_mmap
