@@ -6,6 +6,7 @@
   <!-- Only certain user can own the tlsdated service -->
   <policy user="@UNPRIV_USER@">
     <allow own="org.torproject.tlsdate"/>
+    <allow send_interface="org.torproject.tlsdate"/>
   </policy>
 
   <!-- Allow anyone in the given group to invoke methods -->
