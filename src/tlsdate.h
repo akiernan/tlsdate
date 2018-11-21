@@ -39,6 +39,7 @@
 #define SUBPROCESS_TRIES 10
 #define SUBPROCESS_WAIT_BETWEEN_TRIES 10
 #define RESOLVER_TIMEOUT 30
+#define ADJTIME_THRESHOLD 30
 /* Invalidate the network sync once per day. */
 #define STEADY_STATE_INTERVAL (60*60*24)
 /* Check if the clock has jumped every four hours. */
@@ -77,6 +78,7 @@
 #define SETTER_SET_ERR 5
 #define SETTER_NO_SBOX 6
 #define SETTER_NO_RTC 7
+#define SETTER_GETTIME_ERR 8
 
 #define TEST_HOST 'w', 'w', 'w', '.', 'g', 'o', 'o', 'g', 'l', 'e', '.', \
                   'c', 'o', 'm'

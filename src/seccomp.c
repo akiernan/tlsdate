@@ -104,6 +104,8 @@ enable_setter_seccomp (void)
     SC_ALLOW (close),
     SC_ALLOW (munmap),
 
+    SC_ALLOW (adjtimex),
+    SC_ALLOW (gettimeofday),
     SC_ALLOW (settimeofday),
     SC_ALLOW (read),
     SC_ALLOW (write),

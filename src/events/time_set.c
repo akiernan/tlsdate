@@ -61,7 +61,7 @@ handle_time_setter (struct state *state, int status)
       error ("[event:%s] time setter exited gracefully", __func__);
       break;
     case SETTER_SET_ERR:
-      error ("[event:%s] time setter could not settimeofday()", __func__);
+      error ("[event:%s] time setter could not set time", __func__);
       break;
     case SETTER_NO_RTC:
       error ("[event:%s] time setter could sync rtc", __func__);
@@ -71,6 +71,9 @@ handle_time_setter (struct state *state, int status)
       break;
     case SETTER_READ_ERR:
       error ("[event:%s] time setter could not read time", __func__);
+      break;
+    case SETTER_GETTIME_ERR:
+      error ("[event:%s] time setter could not gettimeofday()", __func__);
       break;
     default:
       error ("[event:%s] received bogus status from time setter: %d",
