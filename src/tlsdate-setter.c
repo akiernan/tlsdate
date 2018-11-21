@@ -147,7 +147,26 @@ time_setter_coprocess (int time_fd, int notify_fd, struct state *state)
           status = SETTER_BAD_TIME;
           if (!state->opts.dry_run)
             {
-              if (settimeofday (&tv, NULL) < 0)
+              struct timeval our_time = { 0, 0 };
+              if (gettimeofday (&our_time, NULL) < 0)
+                {
+                  status = SETTER_GETTIME_ERR;
+                  goto notify_and_die;
+                }
+              struct timeval delta = {tv.tv_sec - our_time.tv_sec, 0};
+
+              /* Adjust clock gradually if it's close enough to the right time.
+               */
+              if (-ADJTIME_THRESHOLD < delta.tv_sec &&
+                  delta.tv_sec < ADJTIME_THRESHOLD)
+                {
+                  if (adjtime (&delta, NULL) < 0)
+                    {
+                      status = SETTER_SET_ERR;
+                      goto notify_and_die;
+                    }
+                }
+              else if (settimeofday (&tv, NULL) < 0)
                 {
                   status = SETTER_SET_ERR;
                   goto notify_and_die;

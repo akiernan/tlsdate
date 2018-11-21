@@ -90,6 +90,8 @@ enable_setter_seccomp (void)
     SC_ALLOW (write),
     SC_ALLOW (pwritev),
 
+    SC_ALLOW (adjtimex),
+    SC_ALLOW (gettimeofday),
     SC_ALLOW (settimeofday),
     SC_ALLOW (ioctl), /* TODO(wad) filter for fd and RTC_SET_TIME */
 #ifdef __NR_time /* This is required for x86 systems */
