@@ -182,7 +182,7 @@ parse_argv (struct opts *opts, int argc, char *argv[])
           opts->should_save_disk = 0;
           break;
         case 'v':
-          verbose = 1;
+          verbose += 1;
           break;
         case 'm':
           opts->min_steady_state_interval = atoi (optarg);
@@ -363,7 +363,10 @@ load_conf (struct opts *opts)
         }
       else if (!strcmp (e->key, "verbose"))
         {
-          verbose = e->value ? !strcmp (e->value, "yes") : 1;
+          if (e->value)
+            verbose = !strcmp(e->value, "yes") ? 1 : strtol(e->value, NULL, 0);
+          else
+            verbose = 1;
         }
       else if (!strcmp (e->key, "source"))
         {

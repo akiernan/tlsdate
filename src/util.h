@@ -32,7 +32,7 @@ extern void logat (int isverbose, const char *fmt, ...);
 #endif
 
 #define debug(fmt, ...) do { \
-  if (_SUPPORT_DEBUG) \
+  if (_SUPPORT_DEBUG && verbose > 1) \
     logat(1, fmt, ## __VA_ARGS__); \
 } while (0)
 
