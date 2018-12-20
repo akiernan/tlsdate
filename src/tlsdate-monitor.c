@@ -40,7 +40,7 @@ build_argv (struct opts *opts)
   if (argc > 1024)
     return NULL;
   argc++; /* uncounted null terminator */
-  argc += 9;  /* -H host -p port -x proxy -Vraw -n -l */
+  argc += 10;  /* -H host -p port -x proxy -Vraw -n -l */
   new_argv = malloc (argc * sizeof (char *));
   if (!new_argv)
     return NULL;
@@ -63,6 +63,8 @@ build_argv (struct opts *opts)
   new_argv[argc++] = "-n";
   if (opts->leap)
     new_argv[argc++] = "-l";
+  if (opts->cur_source->http)
+    new_argv[argc++] = "-w";
   new_argv[argc++] = NULL;
   return new_argv;
 }

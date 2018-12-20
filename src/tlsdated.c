@@ -221,7 +221,7 @@ parse_argv (struct opts *opts, int argc, char *argv[])
 }
 
 static
-void add_source_to_conf (struct opts *opts, char *host, char *port, char *proxy)
+void add_source_to_conf (struct opts *opts, char *host, char *port, char *proxy, int http)
 {
   struct source *s;
   struct source *source = (struct source *) calloc (1, sizeof *source);
@@ -233,6 +233,7 @@ void add_source_to_conf (struct opts *opts, char *host, char *port, char *proxy)
   source->port = strdup (port);
   if (!source->port)
     fatal ("out of memory for port");
+  source->http = http;
   if (proxy)
     {
       source->proxy = strdup (proxy);
@@ -259,6 +260,7 @@ parse_source (struct opts *opts, struct conf_entry *conf)
   char *host = NULL;
   char *port = NULL;
   char *proxy = NULL;
+  int http = 0;
   /* a source entry:
    * source
    *   host <host>
@@ -276,6 +278,8 @@ parse_source (struct opts *opts, struct conf_entry *conf)
         port = conf->value;
       else if (!strcmp (conf->key, "proxy"))
         proxy = conf->value;
+      else if (!strcmp (conf->key, "http"))
+        http = conf->value ? !strcmp (conf->value, "yes") : 1;
       else
         fatal ("malformed config: '%s' in source stanza", conf->key);
       conf = conf->next;
@@ -284,7 +288,7 @@ parse_source (struct opts *opts, struct conf_entry *conf)
     fatal ("unclosed source stanza");
   if (!host || !port)
     fatal ("incomplete source stanza (needs host, port)");
-  add_source_to_conf (opts, host, port, proxy);
+  add_source_to_conf (opts, host, port, proxy, http);
   return conf;
 }
 
@@ -469,7 +473,8 @@ main (int argc, char *argv[], char *envp[])
   load_conf (&state.opts);
   check_conf (&state);
   if (!state.opts.sources)
-    add_source_to_conf (&state.opts, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PROXY);
+    add_source_to_conf (&state.opts, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PROXY,
+                        0);
   state.base = base;
   state.envp = envp;
   state.backoff = state.opts.wait_between_tries;

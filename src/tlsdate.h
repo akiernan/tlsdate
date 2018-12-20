@@ -106,6 +106,7 @@ struct source
 	char *host;
 	char *port;
 	char *proxy;
+	int http;
 	int id;
 };
 
