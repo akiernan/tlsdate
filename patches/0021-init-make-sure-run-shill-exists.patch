@@ -1,0 +1,40 @@
+From 41a309aa54156025311b2f3a678281d804a3b615 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@chromium.org>
+Date: Fri, 8 Jun 2018 18:24:51 -0400
+Subject: [PATCH 21/26] init: make sure /run/shill exists
+
+If we start up before shill, the /run/shill directory might not yet
+exist.  Create it so we can properly bind it.
+
+BUG=b:109822671
+TEST=precq passes
+
+Change-Id: Iaf37a910e603cc1b29155972f0fb10d863451ca2
+Reviewed-on: https://chromium-review.googlesource.com/1093781
+Commit-Ready: Mike Frysinger <vapier@chromium.org>
+Tested-by: Mike Frysinger <vapier@chromium.org>
+Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
+---
+ init/tlsdated.conf | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+index ec45916..c801a87 100644
+--- a/init/tlsdated.conf
++++ b/init/tlsdated.conf
+@@ -19,6 +19,12 @@ pre-start script
+   mkdir -m 755 -p /var/cache/tlsdated
+   # Make sure the timestamp file has the proper permissions if it exists.
+   chmod 0644 /var/cache/tlsdated/timestamp || true
++
++  # If shill hasn't finished initializing, its internal state won't yet exist.
++  # Create it here in the same way it does.
++  # TODO: We really should move the target of /etc/resolv.conf to a common
++  # place that is independent of any daemon (such as "shill").
++  mkdir -p /run/shill || true
+ end script
+ 
+ # The various paths we bind mount:
+-- 
+2.20.1
+

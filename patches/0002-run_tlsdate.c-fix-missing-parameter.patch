@@ -1,0 +1,57 @@
+From 58967fe8c047c746a3f9e48b3765f7c679c810dd Mon Sep 17 00:00:00 2001
+From: Will Drewry <drewry@google.com>
+Date: Wed, 13 May 2015 14:50:39 -0700
+Subject: [PATCH 02/26] run_tlsdate.c: fix missing parameter
+
+A common info() message was missing its
+parameter and is a likely stealth-crash
+candidate.
+
+This change also fixes a missing ] in another
+log string.
+
+BUG=chromium:485643
+TEST=compiles, none other yet.
+
+Signed-off-by: Will Drewry <wad@chromium.org>
+
+Change-Id: I4f70f580acd8c2ecf6587d34d1b51225a95424b3
+Reviewed-on: https://chromium-review.googlesource.com/270810
+Reviewed-by: Douglas Anderson <dianders@chromium.org>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+Commit-Queue: Will Drewry <wad@chromium.org>
+Tested-by: Will Drewry <wad@chromium.org>
+---
+ src/events/run_tlsdate.c | 2 +-
+ src/platform-cros.c      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/events/run_tlsdate.c b/src/events/run_tlsdate.c
+index c36da16..0468e47 100644
+--- a/src/events/run_tlsdate.c
++++ b/src/events/run_tlsdate.c
+@@ -21,7 +21,7 @@ void action_run_tlsdate (evutil_socket_t fd, short what, void *arg)
+   debug ("[event:%s] fired", __func__);
+   if (state->last_sync_type == SYNC_TYPE_NET)
+     {
+-      info ("[event:%s] called, but network time isn't needed");
++      info ("[event:%s] called, but network time isn't needed", __func__);
+       return;
+     }
+   state->resolving = 0;
+diff --git a/src/platform-cros.c b/src/platform-cros.c
+index 56c7115..7ed14d4 100644
+--- a/src/platform-cros.c
++++ b/src/platform-cros.c
+@@ -525,7 +525,7 @@ new_resolver_message(const struct source *src)
+       !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveInterface) ||
+       !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveMember))
+     {
+-      fatal ("[cros could not append arguments for resolver message");
++      fatal ("[cros] could not append arguments for resolver message");
+     }
+   return res;
+ }
+-- 
+2.20.1
+

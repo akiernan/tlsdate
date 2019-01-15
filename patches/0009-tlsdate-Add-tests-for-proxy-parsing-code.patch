@@ -1,0 +1,440 @@
+From 76dd49e9ad7584bca9fc16eb7a7a66b477129db5 Mon Sep 17 00:00:00 2001
+From: Daniel Erat <derat@chromium.org>
+Date: Thu, 22 Jun 2017 23:16:17 -0600
+Subject: [PATCH 09/26] tlsdate: Add tests for proxy-parsing code.
+
+Move get_valid_hostport() and canonicalize_pac() out of
+platform-cros.c and into a new platform-cros-util.c file.
+Add a bunch of unit tests for canonicalize_pac() that get
+compiled into a new platform-cros-util_unittest executable.
+
+No functional changes.
+
+BUG=chromium:708177
+TEST=built with FEATURES=test
+
+Change-Id: Ide07f77292ee5f7fee133a3ad8b27e0afb4de800
+Reviewed-on: https://chromium-review.googlesource.com/545225
+Commit-Ready: Dan Erat <derat@chromium.org>
+Tested-by: Dan Erat <derat@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ Makefile.am                       |   3 +
+ src/include.am                    |   9 +++
+ src/platform-cros-util-unittest.c |  96 +++++++++++++++++++++++++
+ src/platform-cros-util.c          | 113 ++++++++++++++++++++++++++++++
+ src/platform-cros-util.h          |  17 +++++
+ src/platform-cros.c               | 102 +--------------------------
+ 6 files changed, 239 insertions(+), 101 deletions(-)
+ create mode 100644 src/platform-cros-util-unittest.c
+ create mode 100644 src/platform-cros-util.c
+ create mode 100644 src/platform-cros-util.h
+
+diff --git a/Makefile.am b/Makefile.am
+index d5abfc0..70e52b0 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -13,6 +13,9 @@ noinst_PROGRAMS=
+ 
+ # GNU style is "make check", this will make check and test work
+ TESTS+= src/conf_unittest src/tlsdated_unittest src/proxy-bio_unittest
++if HAVE_CROS
++TESTS+= src/platform-cros-util_unittest
++endif
+ test: check
+ 
+ ACLOCAL_AMFLAGS= -I m4
+diff --git a/src/include.am b/src/include.am
+index f3a6bcd..68479b5 100644
+--- a/src/include.am
++++ b/src/include.am
+@@ -13,6 +13,14 @@ src_conf_unittest_SOURCES+= src/conf-unittest.c
+ check_PROGRAMS+= src/conf_unittest
+ noinst_PROGRAMS+= src/conf_unittest
+ 
++if HAVE_CROS
++src_platform_cros_util_unittest_SOURCES = src/platform-cros-util.c
++src_platform_cros_util_unittest_SOURCES+= src/platform-cros-util-unittest.c
++src_platform_cros_util_unittest_SOURCES+= src/util.c
++check_PROGRAMS+= src/platform-cros-util_unittest
++noinst_PROGRAMS+= src/platform-cros-util_unittest
++endif
++
+ src_tlsdate_routeup_CPPFLAGS = -DROUTEUP_MAIN
+ src_tlsdate_routeup_SOURCES = src/routeup.c
+ src_tlsdate_routeup_SOURCES+= src/util.c
+@@ -38,6 +46,7 @@ src_tlsdated_SOURCES+= src/dbus.c
+ endif
+ if HAVE_CROS
+ src_tlsdated_SOURCES+= src/platform-cros.c
++src_tlsdated_SOURCES+= src/platform-cros-util.c
+ endif
+ if HAVE_SECCOMP_FILTER
+ src_tlsdated_SOURCES+= src/seccomp.c
+diff --git a/src/platform-cros-util-unittest.c b/src/platform-cros-util-unittest.c
+new file mode 100644
+index 0000000..a78d9ec
+--- /dev/null
++++ b/src/platform-cros-util-unittest.c
+@@ -0,0 +1,96 @@
++/*
++ * platform-cros-unittest.c - CrOS platform unit tests
++ * Copyright 2017 The Chromium OS Authors. All rights reserved.
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++
++#include "config.h"
++
++#include <stdbool.h>
++#include <string.h>
++
++#include "src/platform-cros-util.h"
++#include "src/test_harness.h"
++
++#define ARRAYSIZE(a) (sizeof(a) / sizeof(a[0]))
++
++/* Sigh, expected by util.c. */
++int verbose = 0;
++
++struct TestCase {
++  /* Input PAC string. */
++  const char *input_pac;
++  /* Expected output. */
++  const char *expected;
++};
++
++/* Runs the test case in |tc| using buffer |buf| of size |len|. */
++static bool check_case(const struct TestCase* tc, char* buf, size_t len) {
++  memset(buf, '\0', len);
++  canonicalize_pac(tc->input_pac, buf, len);
++  return strcmp(tc->expected, buf) == 0;
++}
++
++TEST(test_canonicalize_pac_parsing) {
++  const struct TestCase kCases[] = {
++    /* Well-formed PAC strings. */
++    { "DIRECT", "" },
++    { "PROXY proxy.example.com", "http://proxy.example.com" },
++    { "PROXY proxy.example.com:", "http://proxy.example.com:" },
++    { "PROXY proxy.example.com:1234", "http://proxy.example.com:1234" },
++    { "PROXY proxy-2.example.com", "http://proxy-2.example.com" },
++    { "PROXY 127.0.0.1:8080", "http://127.0.0.1:8080" },
++    { "SOCKS proxy.example.com", "socks4://proxy.example.com" },
++    { "SOCKS5 proxy.example.com", "socks5://proxy.example.com" },
++    { "HTTPS proxy.example.com", "https://proxy.example.com" },
++    /* Bad input should always result in an empty string. */
++    { "", "" },
++    { "BOGUS", "" },
++    { "PROXY", "" },
++    { "PROXYa", "" },
++    { "PROXY ", "" },
++    { "PROXY \n", "" },
++    { "PROXY $.com", "" },
++    { "PROXY proxy.example.com:123;", "" },
++    { "PROXY proxy.example.com:123 ", "" },
++    { "PROXY proxy.example.com::123", "" },
++    { "PROXY proxy.example.com!", "" },
++    { "PROXY http://proxy.example.com", "" },
++    { "PROXY proxy_2.example.com", "" },
++  };
++
++  char buf[256];
++  for (size_t i = 0; i < ARRAYSIZE(kCases); ++i) {
++    EXPECT_TRUE(check_case(&kCases[i], buf, ARRAYSIZE(buf))) {
++      TH_LOG("PAC \"%s\": expected \"%s\", actual \"%s\"",
++             kCases[i].input_pac, kCases[i].expected, buf);
++    }
++  }
++}
++
++TEST(test_canonicalize_pac_overflow) {
++  const struct TestCase kCases[] = {
++    /* Input that needs 15 chars or fewer should be permitted. */
++    { "PROXY abcde", "http://abcde" },
++    { "PROXY abcde:80", "http://abcde:80" },
++    { "PROXY abcdef:8", "http://abcdef:8" },
++    { "PROXY abcdefgh", "http://abcdefgh" },
++    { "HTTPS abcdefg", "https://abcdefg" },
++    /* Input that would take 16 chars (not leaving space for a terminating NUL)
++     * should be dropped. */
++    { "PROXY abcdefghi", "" },
++    { "PROXY abcdefgh:", "" },
++    { "HTTPS abcdefgh", "" },
++  };
++
++  char buf[16];
++  for (size_t i = 0; i < ARRAYSIZE(kCases); ++i) {
++    EXPECT_TRUE(check_case(&kCases[i], buf, ARRAYSIZE(buf))) {
++      TH_LOG("PAC \"%s\": expected \"%s\", actual \"%s\"",
++             kCases[i].input_pac, kCases[i].expected, buf);
++    }
++  }
++}
++
++TEST_HARNESS_MAIN
+diff --git a/src/platform-cros-util.c b/src/platform-cros-util.c
+new file mode 100644
+index 0000000..112000f
+--- /dev/null
++++ b/src/platform-cros-util.c
+@@ -0,0 +1,113 @@
++/*
++ * platform-cros-util.c - Utility code for platform-cros.c
++ * Copyright 2017 The Chromium OS Authors. All rights reserved.
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++
++#include "config.h"
++
++#include <ctype.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++
++#include "src/util.h"
++
++static
++bool
++get_valid_hostport (const char *hostport, char *out, size_t len)
++{
++  bool host = true;
++  const char *end = hostport + strlen (hostport);
++  const char *c;
++  *out = '\0';
++  /* Hosts begin with alphanumeric only. */
++  if (!isalnum (*hostport))
++    {
++      info ("Host does not start with alnum");
++      return false;
++    }
++  *out++ = *hostport;
++  for (c = hostport + 1;  c < end && len > 0; ++c, ++out, --len)
++    {
++      *out = *c;
++      if (host)
++        {
++          if (isalnum (*c) || *c == '-' || *c == '.')
++            {
++              continue;
++            }
++          if (*c == ':')
++            {
++              host = false;
++              continue;
++            }
++        }
++      else
++        {
++          if (isdigit (*c))
++            continue;
++        }
++      *out = '\0';
++      return false;
++    }
++  *out = '\0';
++  return true;
++}
++
++/* TODO(wad) support multiple proxies when Chromium does:
++ * PROXY x.x.x.x:yyyy; PROXY z.z.z.z:aaaaa
++ */
++void canonicalize_pac (const char *pac_fmt, char *proxy_url, size_t len)
++{
++  size_t type_len;
++  size_t copied = 0;
++  const char *space;
++  /* host[255]:port[6]\0 */
++  char hostport[6 + 255 + 2];
++  proxy_url[0] = '\0';
++  if (len < 1)
++    return;
++  if (!strcmp (pac_fmt, "DIRECT"))
++    {
++      return;
++    }
++  /* Find type */
++  space = strchr (pac_fmt, ' ');
++  if (!space)
++    return;
++  type_len = space - pac_fmt;
++  if (!get_valid_hostport (space + 1, hostport, sizeof (hostport)))
++    {
++      error ("invalid host:port: %s", space + 1);
++      return;
++    }
++  proxy_url[0] = '\0';
++  if (!strncmp (pac_fmt, "PROXY", type_len))
++    {
++      copied = snprintf (proxy_url, len, "http://%s", hostport);
++    }
++  else if (!strncmp (pac_fmt, "SOCKS", type_len))
++    {
++      copied = snprintf (proxy_url, len, "socks4://%s", hostport);
++    }
++  else if (!strncmp (pac_fmt, "SOCKS5", type_len))
++    {
++      copied = snprintf (proxy_url, len, "socks5://%s", hostport);
++    }
++  else if (!strncmp (pac_fmt, "HTTPS", type_len))
++    {
++      copied = snprintf (proxy_url, len, "https://%s", hostport);
++    }
++  else
++    {
++      error ("pac_fmt unmatched: '%s' %zu", pac_fmt, type_len);
++    }
++  if (copied >= len)
++    {
++      error ("canonicalize_pac: truncation '%s'", proxy_url);
++      proxy_url[0] = '\0';
++      return;
++    }
++}
+diff --git a/src/platform-cros-util.h b/src/platform-cros-util.h
+new file mode 100644
+index 0000000..7e45338
+--- /dev/null
++++ b/src/platform-cros-util.h
+@@ -0,0 +1,17 @@
++/*
++ * platform-cros-util.h - Utility code for platform-cros.c
++ * Copyright 2017 The Chromium OS Authors. All rights reserved.
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++#ifndef PLATFORM_CROS_H_
++#define PLATFORM_CROS_H_
++
++#include "config.h"
++
++#include <stddef.h>
++
++/* Convert PAC return format to tlsdated url format */
++void canonicalize_pac (const char *pac_fmt, char *proxy_url, size_t len);
++
++#endif  /* PLATFORM_CROS_H_ */
+diff --git a/src/platform-cros.c b/src/platform-cros.c
+index 77d189f..a49d261 100644
+--- a/src/platform-cros.c
++++ b/src/platform-cros.c
+@@ -19,6 +19,7 @@
+ 
+ #include "src/dbus.h"
+ #include "src/platform.h"
++#include "src/platform-cros-util.h"
+ #include "src/tlsdate.h"
+ #include "src/util.h"
+ 
+@@ -59,107 +60,6 @@ struct platform_state
+   uint32_t resolve_network_proxy_serial;
+ };
+ 
+-static
+-bool
+-get_valid_hostport (const char *hostport, char *out, size_t len)
+-{
+-  bool host = true;
+-  const char *end = hostport + strlen (hostport);
+-  const char *c;
+-  *out = '\0';
+-  /* Hosts begin with alphanumeric only. */
+-  if (!isalnum (*hostport))
+-    {
+-      info ("Host does not start with alnum");
+-      return false;
+-    }
+-  *out++ = *hostport;
+-  for (c = hostport + 1;  c < end && len > 0; ++c, ++out, --len)
+-    {
+-      *out = *c;
+-      if (host)
+-        {
+-          if (isalnum (*c) || *c == '-' || *c == '.')
+-            {
+-              continue;
+-            }
+-          if (*c == ':')
+-            {
+-              host = false;
+-              continue;
+-            }
+-        }
+-      else
+-        {
+-          if (isdigit (*c))
+-            continue;
+-        }
+-      *out = '\0';
+-      return false;
+-    }
+-  *out = '\0';
+-  return true;
+-}
+-
+-/* Convert PAC return format to tlsdated url format */
+-/* TODO(wad) support multiple proxies when Chromium does:
+- * PROXY x.x.x.x:yyyy; PROXY z.z.z.z:aaaaa
+- */
+-static
+-void
+-canonicalize_pac (const char *pac_fmt, char *proxy_url, size_t len)
+-{
+-  size_t type_len;
+-  size_t copied = 0;
+-  const char *space;
+-  /* host[255]:port[6]\0 */
+-  char hostport[6 + 255 + 2];
+-  proxy_url[0] = '\0';
+-  if (len < 1)
+-    return;
+-  if (!strcmp (pac_fmt, "DIRECT"))
+-    {
+-      return;
+-    }
+-  /* Find type */
+-  space = strchr (pac_fmt, ' ');
+-  if (!space)
+-    return;
+-  type_len = space - pac_fmt;
+-  if (!get_valid_hostport (space + 1, hostport, sizeof (hostport)))
+-    {
+-      error ("invalid host:port: %s", space + 1);
+-      return;
+-    }
+-  proxy_url[0] = '\0';
+-  if (!strncmp (pac_fmt, "PROXY", type_len))
+-    {
+-      copied = snprintf (proxy_url, len, "http://%s", hostport);
+-    }
+-  else if (!strncmp (pac_fmt, "SOCKS", type_len))
+-    {
+-      copied = snprintf (proxy_url, len, "socks4://%s", hostport);
+-    }
+-  else if (!strncmp (pac_fmt, "SOCKS5", type_len))
+-    {
+-      copied = snprintf (proxy_url, len, "socks5://%s", hostport);
+-    }
+-  else if (!strncmp (pac_fmt, "HTTPS", type_len))
+-    {
+-      copied = snprintf (proxy_url, len, "https://%s", hostport);
+-    }
+-  else
+-    {
+-      error ("pac_fmt unmatched: '%s' %zu", pac_fmt, type_len);
+-    }
+-  if (copied >= len)
+-    {
+-      error ("canonicalize_pac: truncation '%s'", proxy_url);
+-      proxy_url[0] = '\0';
+-      return;
+-    }
+-}
+-
+ static
+ DBusHandlerResult
+ handle_service_change (DBusConnection *connection,
+-- 
+2.20.1
+

@@ -1,0 +1,94 @@
+From fb6fbcb47c6c8725ca4297886aea9d25939282c0 Mon Sep 17 00:00:00 2001
+From: Will Drewry <drewry@google.com>
+Date: Thu, 14 May 2015 14:11:20 -0700
+Subject: [PATCH 03/26] tlsdated: make it -Werror clean
+
+The ebuild overrides the CFLAGS which left it compiling
+without -Werror.  There were a number of cros-specific
+changes which were not -Werror clean. This change fixes
+it.
+
+BUG=chromium:485643
+TEST=compiles with -Werror added to ebuild
+
+Change-Id: Ie0ad2f2070cbbc4c2c614cc70fa28216d5e495ef
+Reviewed-on: https://chromium-review.googlesource.com/271318
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+Commit-Queue: Will Drewry <wad@chromium.org>
+Tested-by: Will Drewry <wad@chromium.org>
+---
+ src/dbus.c              | 2 ++
+ src/platform-cros.c     | 3 ---
+ src/test_harness.h      | 6 +++---
+ src/tlsdated-unittest.c | 2 +-
+ 4 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/src/dbus.c b/src/dbus.c
+index 81bda4b..759c5f0 100644
+--- a/src/dbus.c
++++ b/src/dbus.c
+@@ -32,8 +32,10 @@ static const char *kServiceCanSetTime = kServiceCanSetTimeData;
+ static const char kServiceLastSyncInfoData[] = "LastSyncInfo";
+ static const char *kServiceLastSyncInfo = kServiceLastSyncInfoData;
+ 
++#ifdef TLSDATED_MAIN
+ static const char kTimeUpdatedData[] = "TimeUpdated";
+ static const char *kTimeUpdated = kTimeUpdatedData;
++#endif
+ 
+ static
+ short
+diff --git a/src/platform-cros.c b/src/platform-cros.c
+index 7ed14d4..2acc54e 100644
+--- a/src/platform-cros.c
++++ b/src/platform-cros.c
+@@ -263,9 +263,6 @@ handle_suspend_done (DBusConnection *connection,
+                      DBusMessage *message,
+                      struct platform_state *ctx)
+ {
+-  DBusMessageIter iter;
+-  DBusError error;
+-  const char *pname;
+   debug ("[event:cros:%s]: fired", __func__);
+   /* Coming back from resume, trigger a continuity and time
+    * check just in case none of the other events happen.
+diff --git a/src/test_harness.h b/src/test_harness.h
+index 3fd118a..00a7bee 100644
+--- a/src/test_harness.h
++++ b/src/test_harness.h
+@@ -204,7 +204,7 @@
+ #define _TEST(test_name) \
+   static void test_name(struct __test_metadata *_metadata); \
+   static struct __test_metadata _##test_name##_object = \
+-    { name: "global." #test_name, fn: &test_name }; \
++    { .name = "global." #test_name, .fn = &test_name }; \
+   static void __attribute__((constructor)) _register_##test_name(void) { \
+     __register_test(&_##test_name##_object); \
+   } \
+@@ -254,8 +254,8 @@
+     fixture_name##_teardown(_metadata, &self); \
+   } \
+   static struct __test_metadata _##fixture_name##_##test_name##_object = { \
+-    name: #fixture_name "." #test_name, \
+-    fn: &wrapper_##fixture_name##_##test_name, \
++    .name = #fixture_name "." #test_name, \
++    .fn = &wrapper_##fixture_name##_##test_name, \
+    }; \
+   static void __attribute__((constructor)) \
+       _register_##fixture_name##_##test_name(void) { \
+diff --git a/src/tlsdated-unittest.c b/src/tlsdated-unittest.c
+index 0709467..bd76f72 100644
+--- a/src/tlsdated-unittest.c
++++ b/src/tlsdated-unittest.c
+@@ -126,7 +126,7 @@ FIXTURE (tlsdate)
+ 
+ FIXTURE_SETUP (tlsdate)
+ {
+-  memset (self, 0, sizeof (self));
++  memset (self, 0, sizeof (*self));
+   /* TODO(wad) make this use the same function tlsdated uses. */
+   self->state.base = event_base_new();
+   set_conf_defaults (&self->state.opts);
+-- 
+2.20.1
+

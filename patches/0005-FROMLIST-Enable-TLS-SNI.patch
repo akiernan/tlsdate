@@ -1,0 +1,40 @@
+From 0c4b13bf15b8e5773b79e6317121fba5e97a154f Mon Sep 17 00:00:00 2001
+From: Kevin Cernekee <cernekee@chromium.org>
+Date: Wed, 20 Apr 2016 13:09:54 -0700
+Subject: [PATCH 05/26] FROMLIST: Enable TLS SNI
+
+Upstream submission: https://github.com/ioerror/tlsdate/pull/186
+
+In environments where SSL interception is in place, the SNI field is
+often used to figure out whether to enable or disable interception
+for a new connection.  Enable SNI on tlsdate requests.
+
+BUG=chromium:400429
+TEST=sniff tlsdate's ClientHello message before/after the change, and
+     verify that it contains "clients3.google.com" under "Extension:
+     server_name"
+
+Change-Id: Ibe6383bd0b9b590a16a08ae8e1b74ee0f401b3f0
+Signed-off-by: Kevin Cernekee <cernekee@chromium.org>
+Reviewed-on: https://chromium-review.googlesource.com/339834
+Reviewed-by: Thiemo Nagel <tnagel@chromium.org>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+---
+ src/tlsdate-helper.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/tlsdate-helper.c b/src/tlsdate-helper.c
+index 02dac7a..7455d39 100644
+--- a/src/tlsdate-helper.c
++++ b/src/tlsdate-helper.c
+@@ -745,6 +745,7 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion)
+       SSL_set_info_callback (ssl, openssl_time_callback);
+     }
+   SSL_set_mode (ssl, SSL_MODE_AUTO_RETRY);
++  SSL_set_tlsext_host_name (ssl, host);
+   verb ("V: opening socket to %s:%s\n", host, port);
+   if ( (1 != BIO_set_conn_hostname (s_bio, host)) ||
+        (1 != BIO_set_conn_port (s_bio, port)))
+-- 
+2.20.1
+

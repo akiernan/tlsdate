@@ -1,0 +1,103 @@
+From b9acd27dcfdf2e54d8bc1a61c223ed8e1f8452eb Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?D=C3=A1niel=20B=C3=A1tyai?= <dbatyai@inf.u-szeged.hu>
+Date: Mon, 7 May 2018 15:56:00 +0200
+Subject: [PATCH 15/26] tlsdate: Buildfix for ARM64
+
+Fixed build in case of arm64-generic overlay.
+Added the seccomp filter file for arm64, and updated the list to
+match the aarch64 syscalls.
+
+BUG=none
+TEST=compiled for arm64-generic overlay
+
+Change-Id: Idfc737d4f30c45b47a8a75aed862c32390fccf9d
+Reviewed-on: https://chromium-review.googlesource.com/1047227
+Commit-Ready: Daniel Batyai <dbatyai@inf.u-szeged.hu>
+Tested-by: Daniel Batyai <dbatyai@inf.u-szeged.hu>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+---
+ src/seccomp.c                |  7 ++++++
+ tlsdate-seccomp-arm64.policy | 45 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+)
+ create mode 100644 tlsdate-seccomp-arm64.policy
+
+diff --git a/src/seccomp.c b/src/seccomp.c
+index 8ce0967..41cd6f7 100644
+--- a/src/seccomp.c
++++ b/src/seccomp.c
+@@ -48,6 +48,8 @@
+ #    define EM_ARM 40
+ #  endif
+ #  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_ARM
++#elif defined(__aarch64__)
++#  define SECCOMP_AUDIT_ARCH AUDIT_ARCH_AARCH64
+ #elif defined(__mips__)
+ #  if defined(__mips64)
+ #    if defined(__MIPSEB__)
+@@ -83,7 +85,12 @@ enable_setter_seccomp (void)
+     BPF_STMT (BPF_LD+BPF_W+BPF_ABS,
+     offsetof (struct seccomp_data, nr)),
+ 
++#ifdef __NR_open
+     SC_DENY (open, EINVAL),
++#endif
++#ifdef __NR_openat
++    SC_DENY (openat, EINVAL),
++#endif
+     SC_DENY (fcntl, EINVAL),
+     SC_DENY (fstat, EINVAL),
+ #ifdef __NR_mmap
+diff --git a/tlsdate-seccomp-arm64.policy b/tlsdate-seccomp-arm64.policy
+new file mode 100644
+index 0000000..ea201dc
+--- /dev/null
++++ b/tlsdate-seccomp-arm64.policy
+@@ -0,0 +1,45 @@
++openat: 1
++read: 1
++# Don't allow mmap with both PROT_WRITE and PROT_EXEC
++mmap: arg2 in 0xfffffffb || arg2 in 0xfffffffd
++close: 1
++fstat: 1
++# Don't allow mprotect with both PROT_WRITE and PROT_EXEC
++mprotect: arg2 in 0xfffffffb || arg2 in 0xfffffffd
++munmap: 1
++gettimeofday: 1
++write: 1
++rt_sigprocmask: 1
++brk: 1
++execve: 1
++fcntl: 1
++rt_sigaction: 1
++sendto: 1
++socket: arg0 == PF_FILE || arg0 == PF_INET || arg0 == PF_NETLINK
++uname: 1
++connect: 1
++wait4: 1
++exit_group: 1
++getuid: 1
++clone: 1
++# Allow request == RTC_SET_TIME || request == FIONREAD
++ioctl: arg1 == 0x4024700a || arg1 == 0x541b
++setgid: 1
++recvfrom: 1
++setresuid: 1
++setgroups: 1
++settimeofday: 1
++restart_syscall: 1
++setsockopt: 1
++setresgid: 1
++nanosleep: 1
++exit: 1
++rt_sigreturn: 1
++renameat: 1
++bind: 1
++clock_gettime: 1
++clock_settime: 1
++futex: 1
++getrlimit: 1
++set_robust_list: 1
++set_tid_address: 1
+-- 
+2.20.1
+

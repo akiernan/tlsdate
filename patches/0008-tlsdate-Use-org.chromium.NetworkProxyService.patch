@@ -1,0 +1,259 @@
+From 8ccda0f645b65dc82f8676ce321406938a35d0b4 Mon Sep 17 00:00:00 2001
+From: Daniel Erat <derat@chromium.org>
+Date: Wed, 26 Apr 2017 17:35:45 -0600
+Subject: [PATCH 08/26] tlsdate: Use org.chromium.NetworkProxyService.
+
+Make tlsdated make async method calls to the
+org.chromium.NetworkProxyService D-Bus service to resolve
+proxy information. This replaces old, weird
+signal-requesting calls to org.chromium.LibCrosService.
+
+Also remove some unused DBusError variables.
+
+BUG=chromium:446115,chromium:703217
+TEST=added logging and verified via /var/log/tlsdate.log
+     that tlsdated is using proxy information configured in
+     chrome
+
+Change-Id: I665e2c78ac00e78ff4f6692c0b9b060ca5d92c4e
+Reviewed-on: https://chromium-review.googlesource.com/487611
+Commit-Ready: Dan Erat <derat@chromium.org>
+Tested-by: Dan Erat <derat@chromium.org>
+Reviewed-by: Dan Erat <derat@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ src/platform-cros.c | 83 +++++++++++----------------------------------
+ 1 file changed, 20 insertions(+), 63 deletions(-)
+
+diff --git a/src/platform-cros.c b/src/platform-cros.c
+index 24c532f..77d189f 100644
+--- a/src/platform-cros.c
++++ b/src/platform-cros.c
+@@ -25,10 +25,11 @@
+ static const char kMatchFormat[] = "interface='%s',member='%s',arg0='%s'";
+ static const char kMatchNoArgFormat[] = "interface='%s',member='%s'";
+ 
+-static const char kLibCrosDest[] = "org.chromium.LibCrosService";
+-static const char kLibCrosInterface[] = "org.chromium.LibCrosServiceInterface";
+-static const char kLibCrosPath[] = "/org/chromium/LibCrosService";
+-static const char kResolveNetworkProxy[] = "ResolveNetworkProxy";
++static const char kProxyServiceName[] = "org.chromium.NetworkProxyService";
++static const char kProxyServicePath[] = "/org/chromium/NetworkProxyService";
++static const char kProxyServiceInterface[] =
++    "org.chromium.NetworkProxyServiceInterface";
++static const char kProxyServiceResolveProxyMethod[] = "ResolveProxy";
+ 
+ static const char kDBusInterface[] = "org.freedesktop.DBus";
+ static const char kNameOwnerChanged[] = "NameOwnerChanged";
+@@ -42,9 +43,6 @@ static const char kMember[] = "PropertyChanged";
+ static const char kProxyConfig[] = "ProxyConfig";
+ static const char kDefaultService[] = "DefaultService";
+ 
+-static const char kResolveInterface[] = "org.torproject.tlsdate.Resolver";
+-static const char kResolveMember[] = "ProxyChange";
+-
+ /* TODO(wad) Integrate with cros_system_api/dbus/service_constants.h */
+ static const char kPowerManagerInterface[] = "org.chromium.PowerManager";
+ static const char kSuspendDone[] = "SuspendDone";
+@@ -169,11 +167,9 @@ handle_service_change (DBusConnection *connection,
+                        struct platform_state *ctx)
+ {
+   DBusMessageIter iter, subiter;
+-  DBusError error;
+   const char *pname;
+   const char *pval;
+   const char *service;
+-  dbus_error_init (&error);
+   debug ("[event:cros:%s]: fired", __func__);
+   /* TODO(wad) Track the current DefaultService only fire when it changes */
+   service = dbus_message_get_path (message);
+@@ -211,11 +207,9 @@ handle_manager_change (DBusConnection *connection,
+                        struct platform_state *ctx)
+ {
+   DBusMessageIter iter, subiter;
+-  DBusError error;
+   const char *pname;
+   const char *pval;
+   debug ("[event:cros:%s]: fired", __func__);
+-  dbus_error_init (&error);
+   if (!dbus_message_iter_init (message, &iter))
+     return DBUS_HANDLER_RESULT_HANDLED;
+   if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
+@@ -260,46 +254,22 @@ handle_proxy_change (DBusConnection *connection,
+                      struct platform_state *ctx)
+ {
+   DBusMessageIter iter;
+-  DBusError error;
+-  const char *pname;
+   const char *pval;
+-  char time_host[MAX_PROXY_URL];
+-  int url_len = 0;
+   struct source *src = ctx->state->opts.sources;
+   debug ("[event:cros:%s]: fired", __func__);
+   if (ctx->state->opts.cur_source && ctx->state->opts.cur_source->next)
+     src = ctx->state->opts.cur_source->next;
+   if (!ctx->state->resolving)
+     {
+-      info ("[event:cros:%s] Unexpected ResolveNetworkProxy signal seen",
++      info ("[event:cros:%s] Unexpected ResolveProxy response seen",
+             __func__);
+       return DBUS_HANDLER_RESULT_HANDLED;
+     }
+-  dbus_error_init (&error);
+-  /* Shill emits string:ProxyConfig variant string:"..." */
++
+   if (!dbus_message_iter_init (message, &iter))
+     return DBUS_HANDLER_RESULT_HANDLED;
+   if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
+     return DBUS_HANDLER_RESULT_HANDLED;
+-  dbus_message_iter_get_basic (&iter, &pname);
+-  /* Make sure this was the resolution we asked for */
+-  url_len = snprintf (time_host, sizeof (time_host), "https://%s:%s",
+-                      src->host, src->port);
+-  if (url_len >= sizeof (time_host))
+-    {
+-      error ("[event:cros:%s]: current source url is too long",
+-             __func__);
+-    }
+-  if (strcmp (pname, time_host))
+-    {
+-      error ("[event:cros:%s]: resolved host mismatch: %s v %s",
+-             __func__, pname, time_host);
+-      return DBUS_HANDLER_RESULT_HANDLED;
+-    }
+-  if (!dbus_message_iter_next (&iter))
+-    return DBUS_HANDLER_RESULT_HANDLED;
+-  if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
+-    return DBUS_HANDLER_RESULT_HANDLED;
+   dbus_message_iter_get_basic (&iter, &pval);
+   ctx->state->resolving = 0;
+   canonicalize_pac (pval, ctx->state->dynamic_proxy, sizeof (ctx->state->dynamic_proxy));
+@@ -314,17 +284,15 @@ handle_dbus_change (DBusConnection *connection,
+                     struct platform_state *ctx)
+ {
+   DBusMessageIter iter;
+-  DBusError error;
+   const char *pname;
+   debug ("[event:cros:%s]: fired", __func__);
+-  dbus_error_init (&error);
+   if (!dbus_message_iter_init (message, &iter))
+     return DBUS_HANDLER_RESULT_HANDLED;
+   if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
+     return DBUS_HANDLER_RESULT_HANDLED;
+   dbus_message_iter_get_basic (&iter, &pname);
+   /* Make sure we caught the right property. */
+-  if (strcmp (pname, kLibCrosDest))
++  if (strcmp (pname, kProxyServiceName))
+     return DBUS_HANDLER_RESULT_HANDLED;
+   action_kickoff_time_sync (-1, EV_TIMEOUT, ctx->state);
+   return DBUS_HANDLER_RESULT_HANDLED;
+@@ -366,7 +334,8 @@ action_resolve_proxy (evutil_socket_t fd, short what, void *arg)
+                              ctx->resolve_msg[src->id],
+                              &ctx->resolve_network_proxy_serial))
+     {
+-      error ("[event:%s] cannot send ResolveNetworkProxy query!", __func__);
++      error ("[event:%s] cannot send %s query!", __func__,
++             kProxyServiceResolveProxyMethod);
+       return;
+     }
+ }
+@@ -398,15 +367,13 @@ dbus_filter (DBusConnection *connection, DBusMessage *message, void *data)
+     return handle_service_change (connection, message, state);
+   if (dbus_message_is_signal (message, kManagerInterface, kMember))
+     return handle_manager_change (connection, message, state);
+-  if (dbus_message_is_signal (message, kResolveInterface, kResolveMember))
+-    return handle_proxy_change (connection, message, state);
+   if (dbus_message_is_signal (message, kDBusInterface, kNameOwnerChanged))
+     return handle_dbus_change (connection, message, state);
+   if (dbus_message_is_signal (message, kPowerManagerInterface, kSuspendDone))
+     return handle_suspend_done (connection, message, state);
+   if (dbus_message_is_error (message, kErrorServiceUnknown))
+     {
+-      info ("[cros] org.chromium.LibCrosService.ResolveNetworkProxy is missing");
++      info ("[cros] service %s is missing", kProxyServiceName);
+       info ("[cros] skipping proxy resolution for now");
+       /* Fire off tlsdate rather than letting it fail silently. */
+       state->resolve_network_proxy_serial = 0;
+@@ -421,7 +388,7 @@ dbus_filter (DBusConnection *connection, DBusMessage *message, void *data)
+       if (serial == state->resolve_network_proxy_serial)
+         {
+           state->resolve_network_proxy_serial = 0;
+-          return DBUS_HANDLER_RESULT_HANDLED;
++          return handle_proxy_change (connection, message, state);
+         }
+       info ("[cros] unknown DBus METHOD_RETURN seen: %u", serial);
+       return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+@@ -477,8 +444,6 @@ new_resolver_message(const struct source *src)
+ {
+   char time_host[MAX_PROXY_URL];
+   const char *time_host_ptr = time_host;
+-  const char *kResolveInterfacePtr = kResolveInterface;
+-  const char *kResolveMemberPtr = kResolveMember;
+   int url_len;
+   DBusMessage *res;
+   DBusMessageIter args;
+@@ -486,8 +451,9 @@ new_resolver_message(const struct source *src)
+     {
+       return NULL;
+     }
+-  res = dbus_message_new_method_call (kLibCrosDest, kLibCrosPath,
+-                                      kLibCrosInterface, kResolveNetworkProxy);
++  res = dbus_message_new_method_call (kProxyServiceName, kProxyServicePath,
++                                      kProxyServiceInterface,
++                                      kProxyServiceResolveProxyMethod);
+   if (!res)
+     {
+       error ("[cros] could not setup dynamic proxy for source %d", src->id);
+@@ -504,12 +470,7 @@ new_resolver_message(const struct source *src)
+    * char*, and we need to create a local pointer to get this. See the warning
+    * in dbus_message_append_args's documentation for more details. */
+   dbus_message_iter_init_append (res, &args);
+-  if (!dbus_message_iter_append_basic (
+-          &args, DBUS_TYPE_STRING, &time_host_ptr) ||
+-      !dbus_message_iter_append_basic (
+-          &args, DBUS_TYPE_STRING, &kResolveInterfacePtr) ||
+-      !dbus_message_iter_append_basic (
+-          &args, DBUS_TYPE_STRING, &kResolveMemberPtr))
++  if (!dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &time_host_ptr))
+     {
+       fatal ("[cros] could not append arguments for resolver message");
+     }
+@@ -525,7 +486,6 @@ platform_init_cros (struct state *state)
+   struct source *src = NULL;
+   int sources = 0;
+   DBusConnection *conn = dbus_state->conn;
+-  DBusError error;
+   struct platform_state *platform_state =
+       calloc (1, sizeof (struct platform_state));
+   if (!platform_state)
+@@ -533,15 +493,12 @@ platform_init_cros (struct state *state)
+       error ("[cros] could not allocate platform_state");
+       return -1;
+     }
+-  /* TODO(wad) Follow up with dbus_error_free() where needed. */
+-  dbus_error_init (&error);
+-  /* Add watches for: proxy changes, default service changes, proxy resolution,
+-   * LibCrosService ownership, and power state changes.
++  /* Add watches for: proxy changes, default service changes,
++   * NetworkProxyService ownership, and power state changes.
+    */
+   if (add_match (conn, kServiceInterface, kMember, kProxyConfig) ||
+       add_match (conn, kManagerInterface, kMember, kDefaultService) ||
+-      add_match (conn, kResolveInterface, kResolveMember, NULL) ||
+-      add_match (conn, kDBusInterface, kNameOwnerChanged, kLibCrosDest) ||
++      add_match (conn, kDBusInterface, kNameOwnerChanged, kProxyServiceName) ||
+       add_match (conn, kPowerManagerInterface, kSuspendDone, NULL))
+     return 1;
+ 
+@@ -592,7 +549,7 @@ platform_init_cros (struct state *state)
+   if (!dbus_connection_add_filter (conn,
+                                    dbus_filter, platform_state, NULL))
+     {
+-      error ("Failed to register signal handler callback");
++      error ("Failed to register message handler callback");
+       return 1;
+     }
+   return 0;
+-- 
+2.20.1
+

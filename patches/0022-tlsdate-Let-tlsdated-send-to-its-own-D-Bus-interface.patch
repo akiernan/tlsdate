@@ -1,0 +1,53 @@
+From 7c67bde6c3e9b505975b2933a259db8c3b661a47 Mon Sep 17 00:00:00 2001
+From: Daniel Erat <derat@chromium.org>
+Date: Wed, 18 Jul 2018 18:07:50 -0700
+Subject: [PATCH 22/26] tlsdate: Let tlsdated send to its own D-Bus interface.
+
+org.torproject.tlsdate.conf contains the following stanza:
+
+  <policy context="default">
+    <deny send_interface="org.torproject.tlsdate" />
+    ...
+  </policy>
+
+This appears to apply to the "tlsdate" user that's used to
+run tlsdated. For reasons that are unclear to me, with this
+stanza, I'm able to observe TimeUpdated D-Bus signals when
+running dbus-monitor as the root user, but Chrome doesn't
+receive them. It's not clear to me if this behavior is
+deterministic or whether it's changed over time.
+
+This change adds an "allow send_interface" directive to the
+user="tlsdate" stanza at the top of the file, which results
+in Chrome receiving TimeUpdated signals as expected.
+
+BUG=chromium:860442,chromium:661205
+TEST=made chrome log when receiving TimeUpdated and verified
+     that signals are received at boot for "system-clock"
+     and "network"
+
+Change-Id: I36950a5da78fd18fcb3883b088f60d641d2bddb8
+Reviewed-on: https://chromium-review.googlesource.com/1142825
+Commit-Ready: Dan Erat <derat@chromium.org>
+Tested-by: Dan Erat <derat@chromium.org>
+Reviewed-by: Ryo Hashimoto <hashimoto@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ dbus/org.torproject.tlsdate.conf.in | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/dbus/org.torproject.tlsdate.conf.in b/dbus/org.torproject.tlsdate.conf.in
+index 80c83c1..d47c17c 100644
+--- a/dbus/org.torproject.tlsdate.conf.in
++++ b/dbus/org.torproject.tlsdate.conf.in
+@@ -6,6 +6,7 @@
+   <!-- Only certain user can own the tlsdated service -->
+   <policy user="@UNPRIV_USER@">
+     <allow own="org.torproject.tlsdate"/>
++    <allow send_interface="org.torproject.tlsdate"/>
+   </policy>
+ 
+   <!-- Allow anyone in the given group to invoke methods -->
+-- 
+2.20.1
+

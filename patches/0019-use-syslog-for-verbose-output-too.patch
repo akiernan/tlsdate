@@ -1,0 +1,50 @@
+From 1318d8924c725043033fb7aaa4fdc6aaadfc5b67 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@chromium.org>
+Date: Tue, 29 May 2018 06:47:49 -0400
+Subject: [PATCH 19/26] use syslog for verbose output too
+
+This allows us to drop the shell script & logger call by having tools
+call syslog directly.  It already does for non-verbose messages.
+
+BUG=None
+TEST=time is still set, and log output still shows up
+
+Change-Id: I3c3f077bb7ffbbe50cb0bbd2ee46f62d0cd6ef0d
+Reviewed-on: https://chromium-review.googlesource.com/1075577
+Commit-Ready: Mike Frysinger <vapier@chromium.org>
+Tested-by: Mike Frysinger <vapier@chromium.org>
+Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ init/tlsdated.conf | 3 +--
+ src/util.c         | 3 +++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+index 763f1cb..90a6ef1 100644
+--- a/init/tlsdated.conf
++++ b/init/tlsdated.conf
+@@ -22,5 +22,4 @@ end script
+ # When it runs tlsdate, tlsdated stitches together an argument vector for it
+ # as follows: it begins with everything supplied to it after the --, then
+ # appends -H $host -p $port, and maybe -x $proxy if it has a proxy to use.
+-exec tlsdated -v -- /usr/bin/tlsdate -v -C "$GOOGLE_CERTS" -l \
+-    2>&1 | logger -t tlsdate
++exec tlsdated -v -- /usr/bin/tlsdate -v -C "$GOOGLE_CERTS" -l
+diff --git a/src/util.c b/src/util.c
+index 2ae748e..e344b62 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -42,6 +42,9 @@ verb (const char *fmt, ...)
+   va_start (ap, fmt);
+   vfprintf (stderr, fmt, ap);
+   va_end (ap);
++  va_start (ap, fmt);
++  vsyslog (LOG_INFO, fmt, ap);
++  va_end (ap);
+ }
+ void API logat (int isverbose, const char *fmt, ...)
+ {
+-- 
+2.20.1
+

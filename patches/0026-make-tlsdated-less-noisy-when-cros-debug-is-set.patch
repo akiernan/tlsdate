@@ -1,0 +1,82 @@
+From 6103fff146d9e434a643a031f7a557fd793c8d08 Mon Sep 17 00:00:00 2001
+From: Chris Morin <cmtm@google.com>
+Date: Mon, 10 Dec 2018 20:32:42 -0800
+Subject: [PATCH 26/26] make tlsdated less noisy when cros-debug is set
+
+tlsdated gets extremely noisy when it's built with the cros-debug flag.
+Turn off these log messages by default. They can be turned back on by
+passing 2 '-v' flags to tlsdated, or by setting 'verbose' to '2' in the
+tlsdated.conf file.
+
+Also, don't pass '-v' to tlsdated because it's already set in the
+tlsdated.conf file.
+
+BUG=none
+TEST=Ensure logs aren't full of messages from tlsdated
+TEST=Pass '-vv' to tlsdated and ensure extra logs are seen
+TEST=Set verbose to 2 in the tlsdated.conf file and ensure extra logs
+are seen
+
+Change-Id: I83db724bf739ae2808edd13b81252e037c983faa
+Reviewed-on: https://chromium-review.googlesource.com/1370630
+Commit-Ready: Christopher Morin <cmtm@google.com>
+Tested-by: Christopher Morin <cmtm@google.com>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+---
+ init/tlsdated.conf | 2 +-
+ src/tlsdated.c     | 7 +++++--
+ src/util.h         | 2 +-
+ 3 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+index c801a87..e7a3ec8 100644
+--- a/init/tlsdated.conf
++++ b/init/tlsdated.conf
+@@ -57,5 +57,5 @@ script
+     -b /run/dbus,,1 -b /run/shill \
+     -k '/var,/var,tmpfs,MS_NODEV|MS_NOEXEC|MS_NOSUID,mode=755,size=10M' \
+     -b /var/cache/tlsdated,,1 \
+-    /usr/bin/tlsdated -v -- /usr/bin/tlsdate -v -C "${GOOGLE_CERTS}" -l
++    /usr/bin/tlsdated -- /usr/bin/tlsdate -v -C "${GOOGLE_CERTS}" -l
+ end script
+diff --git a/src/tlsdated.c b/src/tlsdated.c
+index b54f02b..117a012 100644
+--- a/src/tlsdated.c
++++ b/src/tlsdated.c
+@@ -182,7 +182,7 @@ parse_argv (struct opts *opts, int argc, char *argv[])
+           opts->should_save_disk = 0;
+           break;
+         case 'v':
+-          verbose = 1;
++          verbose += 1;
+           break;
+         case 'm':
+           opts->min_steady_state_interval = atoi (optarg);
+@@ -363,7 +363,10 @@ load_conf (struct opts *opts)
+         }
+       else if (!strcmp (e->key, "verbose"))
+         {
+-          verbose = e->value ? !strcmp (e->value, "yes") : 1;
++          if (e->value)
++            verbose = !strcmp(e->value, "yes") ? 1 : strtol(e->value, NULL, 0);
++          else
++            verbose = 1;
+         }
+       else if (!strcmp (e->key, "source"))
+         {
+diff --git a/src/util.h b/src/util.h
+index 55c77c8..88913bb 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -32,7 +32,7 @@ extern void logat (int isverbose, const char *fmt, ...);
+ #endif
+ 
+ #define debug(fmt, ...) do { \
+-  if (_SUPPORT_DEBUG) \
++  if (_SUPPORT_DEBUG && verbose > 1) \
+     logat(1, fmt, ## __VA_ARGS__); \
+ } while (0)
+ 
+-- 
+2.20.1
+

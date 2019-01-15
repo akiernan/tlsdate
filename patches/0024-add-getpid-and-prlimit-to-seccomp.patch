@@ -1,0 +1,65 @@
+From c8c23b8dab5aaea592005c854d39aa106b58c3d4 Mon Sep 17 00:00:00 2001
+From: Yunlian Jiang <yunlian@google.com>
+Date: Wed, 24 Oct 2018 22:53:48 -0700
+Subject: [PATCH 24/26] add getpid and prlimit to seccomp
+
+This is needed to make sure seccomp work with glibc 2.27
+
+BUG=chromium:897477
+TEST=None
+
+Change-Id: Ic3ecc9f1abebd8984974f8d2c7955b78b6ef0d25
+Reviewed-on: https://chromium-review.googlesource.com/1298659
+Commit-Ready: Yunlian Jiang <yunlian@chromium.org>
+Tested-by: Yunlian Jiang <yunlian@chromium.org>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+---
+ tlsdate-seccomp-amd64.policy | 2 ++
+ tlsdate-seccomp-arm.policy   | 2 ++
+ tlsdate-seccomp-arm64.policy | 2 ++
+ tlsdate-seccomp-x86.policy   | 2 ++
+ 4 files changed, 8 insertions(+)
+
+diff --git a/tlsdate-seccomp-amd64.policy b/tlsdate-seccomp-amd64.policy
+index 6fea76d..1b60371 100644
+--- a/tlsdate-seccomp-amd64.policy
++++ b/tlsdate-seccomp-amd64.policy
+@@ -47,3 +47,5 @@ futex: 1
+ getrlimit: 1
+ set_robust_list: 1
+ set_tid_address: 1
++getpid: 1
++prlimit64: arg2 == 0 && arg3 != 0
+diff --git a/tlsdate-seccomp-arm.policy b/tlsdate-seccomp-arm.policy
+index 463a4be..480cc17 100644
+--- a/tlsdate-seccomp-arm.policy
++++ b/tlsdate-seccomp-arm.policy
+@@ -49,3 +49,5 @@ futex: 1
+ ugetrlimit: 1
+ set_robust_list: 1
+ set_tid_address: 1
++getpid: 1
++prlimit64: arg2 == 0 && arg3 != 0
+diff --git a/tlsdate-seccomp-arm64.policy b/tlsdate-seccomp-arm64.policy
+index ea201dc..0fab34f 100644
+--- a/tlsdate-seccomp-arm64.policy
++++ b/tlsdate-seccomp-arm64.policy
+@@ -43,3 +43,5 @@ futex: 1
+ getrlimit: 1
+ set_robust_list: 1
+ set_tid_address: 1
++getpid: 1
++prlimit64: arg2 == 0 && arg3 != 0
+diff --git a/tlsdate-seccomp-x86.policy b/tlsdate-seccomp-x86.policy
+index 4987abc..6f23df4 100644
+--- a/tlsdate-seccomp-x86.policy
++++ b/tlsdate-seccomp-x86.policy
+@@ -46,3 +46,5 @@ ugetrlimit: 1
+ set_robust_list: 1
+ set_tid_address: 1
+ uname: 1
++getpid: 1
++prlimit64: arg2 == 0 && arg3 != 0
+-- 
+2.20.1
+

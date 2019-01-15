@@ -1,0 +1,56 @@
+From dbc57c67851f90eebdc2c07852e1df226daa9f50 Mon Sep 17 00:00:00 2001
+From: Yunlian Jiang <yunlian@google.com>
+Date: Fri, 19 Oct 2018 11:59:34 -0700
+Subject: [PATCH 23/26] tlsdate: add openat to seccomp
+
+This adds openat to a seccomp policy file if open is already there.
+We need this because glibc 2.25 changed it system call for open().
+
+BUG=chromium:894614
+TEST=None
+
+Change-Id: I9543567547a326adb2d435a9ced9e8b58d56e957
+Reviewed-on: https://chromium-review.googlesource.com/1291874
+Commit-Ready: Yunlian Jiang <yunlian@chromium.org>
+Tested-by: Yunlian Jiang <yunlian@chromium.org>
+Reviewed-by: Dan Erat <derat@chromium.org>
+---
+ tlsdate-seccomp-amd64.policy | 1 +
+ tlsdate-seccomp-arm.policy   | 1 +
+ tlsdate-seccomp-x86.policy   | 1 +
+ 3 files changed, 3 insertions(+)
+
+diff --git a/tlsdate-seccomp-amd64.policy b/tlsdate-seccomp-amd64.policy
+index d22afdc..6fea76d 100644
+--- a/tlsdate-seccomp-amd64.policy
++++ b/tlsdate-seccomp-amd64.policy
+@@ -1,5 +1,6 @@
+ mmap: 1
+ open: 1
++openat: 1
+ read: 1
+ close: 1
+ fstat: 1
+diff --git a/tlsdate-seccomp-arm.policy b/tlsdate-seccomp-arm.policy
+index 2d31d89..463a4be 100644
+--- a/tlsdate-seccomp-arm.policy
++++ b/tlsdate-seccomp-arm.policy
+@@ -1,4 +1,5 @@
+ open: 1
++openat: 1
+ read: 1
+ mmap2: 1
+ stat64: 1
+diff --git a/tlsdate-seccomp-x86.policy b/tlsdate-seccomp-x86.policy
+index da790c9..4987abc 100644
+--- a/tlsdate-seccomp-x86.policy
++++ b/tlsdate-seccomp-x86.policy
+@@ -1,4 +1,5 @@
+ open: 1
++openat: 1
+ mmap2: 1
+ read: 1
+ close: 1
+-- 
+2.20.1
+

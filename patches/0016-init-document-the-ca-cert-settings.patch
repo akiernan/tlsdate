@@ -1,0 +1,39 @@
+From 1a2b3fddd747b1f6529edf3acf0c64385a738d54 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@chromium.org>
+Date: Fri, 25 May 2018 11:48:29 -0400
+Subject: [PATCH 16/26] init: document the ca-cert settings
+
+BUG=chromium:402813
+TEST=precq passes
+TEST=setting time still works
+
+Change-Id: I85c1a690ad512c52786dd5a1415480c090ee6cc7
+Reviewed-on: https://chromium-review.googlesource.com/1074530
+Commit-Ready: Mike Frysinger <vapier@chromium.org>
+Tested-by: Mike Frysinger <vapier@chromium.org>
+Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ init/tlsdated.conf | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+index f5b46a4..f96ba30 100644
+--- a/init/tlsdated.conf
++++ b/init/tlsdated.conf
+@@ -9,8 +9,11 @@ start on started system-services
+ stop on stopping system-services
+ respawn
+ 
++# We sync time from Google servers, so use the reduced set of certs that we
++# have specifically for talking to Google systems.
++env GOOGLE_CERTS=/usr/share/chromeos-ca-certificates
++
+ script
+-  GOOGLE_CERTS=/usr/share/chromeos-ca-certificates
+   mkdir -m 755 -p /var/cache/tlsdated
+   # Make sure the timestamp file has the proper permissions.
+   chmod 0644 /var/cache/tlsdated/timestamp || true
+-- 
+2.20.1
+

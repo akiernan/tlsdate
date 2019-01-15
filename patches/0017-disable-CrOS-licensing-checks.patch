@@ -1,0 +1,33 @@
+From 37649d9752dec0b04f3a35a793f5daff627b6f07 Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@chromium.org>
+Date: Tue, 29 May 2018 07:02:02 -0400
+Subject: [PATCH 17/26] disable CrOS licensing checks
+
+This is a 3rd party forked project, so we don't want to enforce the
+CrOS licensing in here.
+
+BUG=None
+TEST=repo upload no longer complains
+
+Change-Id: I9d35a2204736b5165704c2dcba5c1f1b89feb457
+Reviewed-on: https://chromium-review.googlesource.com/1075473
+Commit-Ready: ChromeOS CL Exonerator Bot <chromiumos-cl-exonerator@appspot.gserviceaccount.com>
+Tested-by: Mike Frysinger <vapier@chromium.org>
+Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ PRESUBMIT.cfg | 2 ++
+ 1 file changed, 2 insertions(+)
+ create mode 100644 PRESUBMIT.cfg
+
+diff --git a/PRESUBMIT.cfg b/PRESUBMIT.cfg
+new file mode 100644
+index 0000000..f2d8f02
+--- /dev/null
++++ b/PRESUBMIT.cfg
+@@ -0,0 +1,2 @@
++[Hook Overrides]
++cros_license_check: false
+-- 
+2.20.1
+

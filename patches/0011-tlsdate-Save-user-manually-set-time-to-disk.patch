@@ -1,0 +1,47 @@
+From 27c3d790346933897a8178227eeca031ce6583f9 Mon Sep 17 00:00:00 2001
+From: Puthikorn Voravootivat <puthik@chromium.org>
+Date: Thu, 22 Jun 2017 15:27:13 -0700
+Subject: [PATCH 11/26] tlsdate: Save user manually set time to disk
+
+Some enterprise network only support NTP protocol which make
+tlsdate never get time synced via network. As tlsdate currently
+flags all non-network source of time to not sync to disk. This
+will make time to be incorrect when RTC lost power.
+
+This CL make tlsdate to also sync time from platform to disk to
+solve this issue.
+
+BUG=chromium:708177
+TEST=manual. Set time, remove battery, time still correct after boot.
+
+Change-Id: Icf77fb492e3f617d6358027f3d8e29bc590d5974
+Signed-off-by: Puthikorn Voravootivat <puthik@chromium.org>
+Reviewed-on: https://chromium-review.googlesource.com/544631
+Reviewed-by: Dan Erat <derat@chromium.org>
+Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
+---
+ src/events/save.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/events/save.c b/src/events/save.c
+index 3b3b889..d14c9bc 100644
+--- a/src/events/save.c
++++ b/src/events/save.c
+@@ -24,11 +24,12 @@ void action_sync_and_save (evutil_socket_t fd, short what, void *arg)
+   time_t t = state->last_time;
+   ssize_t bytes;
+   debug ("[event:%s] fired", __func__);
+-  /* For all non-net sources, don't write to disk by
++  /* For non-net and non-platform source, don't write to disk by
+    * flagging the time negative.  We don't use negative
+    * times and this won't effect shutdown (0) writes.
+    */
+-  if (state->last_sync_type != SYNC_TYPE_NET)
++  if (state->last_sync_type != SYNC_TYPE_NET &&
++      state->last_sync_type != SYNC_TYPE_PLATFORM)
+     t = -t;
+   if (what & EV_READ)
+     {
+-- 
+2.20.1
+

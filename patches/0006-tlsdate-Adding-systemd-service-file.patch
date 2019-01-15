@@ -1,0 +1,51 @@
+From 78a898a0b196b4b683a08dfa34128e39bad9c340 Mon Sep 17 00:00:00 2001
+From: Sabin Floares <sabin.floares@intel.com>
+Date: Thu, 25 Aug 2016 12:15:46 +0300
+Subject: [PATCH 06/26] tlsdate: Adding systemd service file.
+
+BUG=chromium:583671
+CQ-DEPEND=CL:375878
+TEST=Checked that the service runs.
+
+Change-Id: I770b9b32cb81a121aca0cbd69cad8b130183db84
+Reviewed-on: https://chromium-review.googlesource.com/375898
+Commit-Ready: Sabin Flo <sabin.floares@gmail.com>
+Tested-by: Sabin Flo <sabin.floares@gmail.com>
+Reviewed-by: Mike Frysinger <vapier@chromium.org>
+---
+ init/tlsdated-directories.conf |  2 ++
+ init/tlsdated.service          | 13 +++++++++++++
+ 2 files changed, 15 insertions(+)
+ create mode 100644 init/tlsdated-directories.conf
+ create mode 100644 init/tlsdated.service
+
+diff --git a/init/tlsdated-directories.conf b/init/tlsdated-directories.conf
+new file mode 100644
+index 0000000..1085772
+--- /dev/null
++++ b/init/tlsdated-directories.conf
+@@ -0,0 +1,2 @@
++d /var/cache/tlsdated 0755 - - -
++z /var/cache/tlsdated/timestamp 0644 - - -
+diff --git a/init/tlsdated.service b/init/tlsdated.service
+new file mode 100644
+index 0000000..9dfb859
+--- /dev/null
++++ b/init/tlsdated.service
+@@ -0,0 +1,13 @@
++# Copyright 2016 The Chromium OS Authors. All rights reserved.
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++[Unit]
++Description=tlsdate daemon to set the system time
++PartOf=system-services.target
++After=system-services.target
++
++[Service]
++Restart=on-failure
++ExecStart=/usr/bin/tlsdated -v -- /usr/bin/tlsdate -v -C \
++	/usr/share/chromeos-ca-certificates -l 2>&1
+-- 
+2.20.1
+
