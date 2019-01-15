@@ -30,24 +30,24 @@ Reviewed-by: Will Drewry <wad@chromium.org>
  src/events/kickoff_time_sync.c | 34 +++++++++++++++++++++++++---------
  1 file changed, 25 insertions(+), 9 deletions(-)
 
-diff --git a/src/events/kickoff_time_sync.c b/src/events/kickoff_time_sync.c
-index 228a37f..82d7aaa 100644
---- a/src/events/kickoff_time_sync.c
-+++ b/src/events/kickoff_time_sync.c
-@@ -94,6 +94,7 @@ void action_kickoff_time_sync (evutil_socket_t fd, short what, void *arg)
-   debug ("[event:%s] fired", __func__);
+Index: tlsdate/src/events/kickoff_time_sync.c
+===================================================================
+--- tlsdate.orig/src/events/kickoff_time_sync.c
++++ tlsdate/src/events/kickoff_time_sync.c
+@@ -121,6 +121,7 @@ void action_kickoff_time_sync (evutil_so
+   verb_debug ("[event:%s] fired", __func__);
    time_t delta = state->clock_delta;
    int jitter = 0;
 +  int reschedule = 0;
    if (check_continuity (&delta) > 0)
      {
        info ("[event:%s] clock delta desync detected (%d != %d)", __func__,
-@@ -114,19 +115,34 @@ void action_kickoff_time_sync (evutil_socket_t fd, short what, void *arg)
+@@ -141,19 +142,34 @@ void action_kickoff_time_sync (evutil_so
    if (state->tries > 0)
      {
        state->tries -= 1;
 -      /* Don't bother re-triggering tlsdate */
--      debug ("[event:%s] called while tries are in progress", __func__);
+-      verb_debug ("[event:%s] called while tries are in progress", __func__);
 -      return;
 +      /* Add an extra attempt to be performed after the current attempt
 +       * completes in case there is new data. Don't automatically reschedule
@@ -55,7 +55,7 @@ index 228a37f..82d7aaa 100644
 +       */
 +      if (state->backoff == state->opts.wait_between_tries)
 +        {
-+          debug ("[event:%s] called while tries are in progress", __func__);
++          verb_debug ("[event:%s] called while tries are in progress", __func__);
 +          return;
 +        }
 +      reschedule = 1;
@@ -73,19 +73,16 @@ index 228a37f..82d7aaa 100644
     */
    if (event_pending (state->events[E_TLSDATE], EV_TIMEOUT, NULL))
      {
--      debug ("[event:%s] called while tlsdate is pending", __func__);
+-      verb_debug ("[event:%s] called while tlsdate is pending", __func__);
 -      return;
 +      if (!reschedule)
 +        {
-+          debug ("[event:%s] tlsdate pending and not being rescheduled",
-+                 __func__);
++          verb_debug ("[event:%s] tlsdate pending and not being rescheduled",
++                      __func__);
 +          return;
 +        }
-+      debug ("[event:%s] pending tlsdate being rescheduled", __func__);
++      verb_debug ("[event:%s] pending tlsdate being rescheduled", __func__);
 +      jitter = state->backoff;
      }
    if (!state->events[E_RESOLVER])
      {
--- 
-2.20.1
-

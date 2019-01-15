@@ -22,10 +22,10 @@ Reviewed-by: Manoj Gupta <manojgupta@chromium.org>
  src/platform-cros.c               | 3 ---
  2 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/src/platform-cros-util-unittest.c b/src/platform-cros-util-unittest.c
-index 1d23ea6..14af82c 100644
---- a/src/platform-cros-util-unittest.c
-+++ b/src/platform-cros-util-unittest.c
+Index: tlsdate/src/platform-cros-util-unittest.c
+===================================================================
+--- tlsdate.orig/src/platform-cros-util-unittest.c
++++ tlsdate/src/platform-cros-util-unittest.c
 @@ -68,7 +68,8 @@ TEST(test_canonicalize_pac_parsing) {
    };
  
@@ -46,21 +46,18 @@ index 1d23ea6..14af82c 100644
      EXPECT_TRUE(check_case(&kCases[i], buf, ARRAYSIZE(buf))) {
        TH_LOG("PAC \"%s\": expected \"%s\", actual \"%s\"",
               kCases[i].input_pac, kCases[i].expected, buf);
-diff --git a/src/platform-cros.c b/src/platform-cros.c
-index a49d261..cf67960 100644
---- a/src/platform-cros.c
-+++ b/src/platform-cros.c
-@@ -155,10 +155,7 @@ handle_proxy_change (DBusConnection *connection,
+Index: tlsdate/src/platform-cros.c
+===================================================================
+--- tlsdate.orig/src/platform-cros.c
++++ tlsdate/src/platform-cros.c
+@@ -155,10 +155,7 @@ handle_proxy_change (DBusConnection *con
  {
    DBusMessageIter iter;
    const char *pval;
 -  struct source *src = ctx->state->opts.sources;
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
 -  if (ctx->state->opts.cur_source && ctx->state->opts.cur_source->next)
 -    src = ctx->state->opts.cur_source->next;
    if (!ctx->state->resolving)
      {
        info ("[event:cros:%s] Unexpected ResolveProxy response seen",
--- 
-2.20.1
-

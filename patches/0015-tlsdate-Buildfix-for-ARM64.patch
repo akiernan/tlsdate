@@ -21,10 +21,10 @@ Reviewed-by: Mike Frysinger <vapier@chromium.org>
  2 files changed, 52 insertions(+)
  create mode 100644 tlsdate-seccomp-arm64.policy
 
-diff --git a/src/seccomp.c b/src/seccomp.c
-index 8ce0967..41cd6f7 100644
---- a/src/seccomp.c
-+++ b/src/seccomp.c
+Index: tlsdate/src/seccomp.c
+===================================================================
+--- tlsdate.orig/src/seccomp.c
++++ tlsdate/src/seccomp.c
 @@ -48,6 +48,8 @@
  #    define EM_ARM 40
  #  endif
@@ -34,9 +34,9 @@ index 8ce0967..41cd6f7 100644
  #elif defined(__mips__)
  #  if defined(__mips64)
  #    if defined(__MIPSEB__)
-@@ -83,7 +85,12 @@ enable_setter_seccomp (void)
-     BPF_STMT (BPF_LD+BPF_W+BPF_ABS,
-     offsetof (struct seccomp_data, nr)),
+@@ -101,7 +103,12 @@ enable_setter_seccomp (void)
+     SC_ALLOW (exit_group),
+     SC_ALLOW (exit),
  
 +#ifdef __NR_open
      SC_DENY (open, EINVAL),
@@ -47,11 +47,10 @@ index 8ce0967..41cd6f7 100644
      SC_DENY (fcntl, EINVAL),
      SC_DENY (fstat, EINVAL),
  #ifdef __NR_mmap
-diff --git a/tlsdate-seccomp-arm64.policy b/tlsdate-seccomp-arm64.policy
-new file mode 100644
-index 0000000..ea201dc
+Index: tlsdate/tlsdate-seccomp-arm64.policy
+===================================================================
 --- /dev/null
-+++ b/tlsdate-seccomp-arm64.policy
++++ tlsdate/tlsdate-seccomp-arm64.policy
 @@ -0,0 +1,45 @@
 +openat: 1
 +read: 1
@@ -98,6 +97,3 @@ index 0000000..ea201dc
 +getrlimit: 1
 +set_robust_list: 1
 +set_tid_address: 1
--- 
-2.20.1
-

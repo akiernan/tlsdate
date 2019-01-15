@@ -23,14 +23,14 @@ Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
  src/events/save.c | 5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/src/events/save.c b/src/events/save.c
-index 3b3b889..d14c9bc 100644
---- a/src/events/save.c
-+++ b/src/events/save.c
-@@ -24,11 +24,12 @@ void action_sync_and_save (evutil_socket_t fd, short what, void *arg)
+Index: tlsdate/src/events/save.c
+===================================================================
+--- tlsdate.orig/src/events/save.c
++++ tlsdate/src/events/save.c
+@@ -24,11 +24,12 @@ void action_sync_and_save (evutil_socket
    time_t t = state->last_time;
    ssize_t bytes;
-   debug ("[event:%s] fired", __func__);
+   verb_debug ("[event:%s] fired", __func__);
 -  /* For all non-net sources, don't write to disk by
 +  /* For non-net and non-platform source, don't write to disk by
     * flagging the time negative.  We don't use negative
@@ -42,6 +42,3 @@ index 3b3b889..d14c9bc 100644
      t = -t;
    if (what & EV_READ)
      {
--- 
-2.20.1
-

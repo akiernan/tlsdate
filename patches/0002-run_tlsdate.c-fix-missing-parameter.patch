@@ -26,24 +26,11 @@ Tested-by: Will Drewry <wad@chromium.org>
  src/platform-cros.c      | 2 +-
  2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/src/events/run_tlsdate.c b/src/events/run_tlsdate.c
-index c36da16..0468e47 100644
---- a/src/events/run_tlsdate.c
-+++ b/src/events/run_tlsdate.c
-@@ -21,7 +21,7 @@ void action_run_tlsdate (evutil_socket_t fd, short what, void *arg)
-   debug ("[event:%s] fired", __func__);
-   if (state->last_sync_type == SYNC_TYPE_NET)
-     {
--      info ("[event:%s] called, but network time isn't needed");
-+      info ("[event:%s] called, but network time isn't needed", __func__);
-       return;
-     }
-   state->resolving = 0;
-diff --git a/src/platform-cros.c b/src/platform-cros.c
-index 56c7115..7ed14d4 100644
---- a/src/platform-cros.c
-+++ b/src/platform-cros.c
-@@ -525,7 +525,7 @@ new_resolver_message(const struct source *src)
+Index: tlsdate/src/platform-cros.c
+===================================================================
+--- tlsdate.orig/src/platform-cros.c
++++ tlsdate/src/platform-cros.c
+@@ -525,7 +525,7 @@ new_resolver_message(const struct source
        !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveInterface) ||
        !dbus_message_iter_append_basic (&args, DBUS_TYPE_STRING, &kResolveMember))
      {
@@ -52,6 +39,3 @@ index 56c7115..7ed14d4 100644
      }
    return res;
  }
--- 
-2.20.1
-

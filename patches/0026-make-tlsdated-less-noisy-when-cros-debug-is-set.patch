@@ -28,31 +28,20 @@ Reviewed-by: Mike Frysinger <vapier@chromium.org>
  src/util.h         | 2 +-
  3 files changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
-index c801a87..e7a3ec8 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
-@@ -57,5 +57,5 @@ script
-     -b /run/dbus,,1 -b /run/shill \
-     -k '/var,/var,tmpfs,MS_NODEV|MS_NOEXEC|MS_NOSUID,mode=755,size=10M' \
-     -b /var/cache/tlsdated,,1 \
--    /usr/bin/tlsdated -v -- /usr/bin/tlsdate -v -C "${GOOGLE_CERTS}" -l
-+    /usr/bin/tlsdated -- /usr/bin/tlsdate -v -C "${GOOGLE_CERTS}" -l
- end script
-diff --git a/src/tlsdated.c b/src/tlsdated.c
-index b54f02b..117a012 100644
---- a/src/tlsdated.c
-+++ b/src/tlsdated.c
-@@ -182,7 +182,7 @@ parse_argv (struct opts *opts, int argc, char *argv[])
+Index: tlsdate/src/tlsdated.c
+===================================================================
+--- tlsdate.orig/src/tlsdated.c
++++ tlsdate/src/tlsdated.c
+@@ -186,7 +186,7 @@ parse_argv (struct opts *opts, int argc,
            opts->should_save_disk = 0;
            break;
          case 'v':
 -          verbose = 1;
 +          verbose += 1;
            break;
-         case 'm':
-           opts->min_steady_state_interval = atoi (optarg);
-@@ -363,7 +363,10 @@ load_conf (struct opts *opts)
+         case 'b':
+           verbose_debug = 1;
+@@ -371,7 +371,10 @@ load_conf (struct opts *opts)
          }
        else if (!strcmp (e->key, "verbose"))
          {
@@ -64,19 +53,3 @@ index b54f02b..117a012 100644
          }
        else if (!strcmp (e->key, "source"))
          {
-diff --git a/src/util.h b/src/util.h
-index 55c77c8..88913bb 100644
---- a/src/util.h
-+++ b/src/util.h
-@@ -32,7 +32,7 @@ extern void logat (int isverbose, const char *fmt, ...);
- #endif
- 
- #define debug(fmt, ...) do { \
--  if (_SUPPORT_DEBUG) \
-+  if (_SUPPORT_DEBUG && verbose > 1) \
-     logat(1, fmt, ## __VA_ARGS__); \
- } while (0)
- 
--- 
-2.20.1
-

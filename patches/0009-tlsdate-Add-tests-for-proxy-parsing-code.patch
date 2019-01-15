@@ -30,27 +30,27 @@ Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
  create mode 100644 src/platform-cros-util.c
  create mode 100644 src/platform-cros-util.h
 
-diff --git a/Makefile.am b/Makefile.am
-index d5abfc0..70e52b0 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -13,6 +13,9 @@ noinst_PROGRAMS=
- 
- # GNU style is "make check", this will make check and test work
- TESTS+= src/conf_unittest src/tlsdated_unittest src/proxy-bio_unittest
+Index: tlsdate/Makefile.am
+===================================================================
+--- tlsdate.orig/Makefile.am
++++ tlsdate/Makefile.am
+@@ -21,6 +21,9 @@ TESTS+= src/conf_unittest src/proxy-bio_
+ if TARGET_LINUX
+ TESTS+= src/tlsdated_unittest
+ endif
 +if HAVE_CROS
 +TESTS+= src/platform-cros-util_unittest
 +endif
  test: check
+ endif
  
- ACLOCAL_AMFLAGS= -I m4
-diff --git a/src/include.am b/src/include.am
-index f3a6bcd..68479b5 100644
---- a/src/include.am
-+++ b/src/include.am
-@@ -13,6 +13,14 @@ src_conf_unittest_SOURCES+= src/conf-unittest.c
- check_PROGRAMS+= src/conf_unittest
+Index: tlsdate/src/include.am
+===================================================================
+--- tlsdate.orig/src/include.am
++++ tlsdate/src/include.am
+@@ -44,6 +44,14 @@ check_PROGRAMS+= src/conf_unittest
  noinst_PROGRAMS+= src/conf_unittest
+ endif
  
 +if HAVE_CROS
 +src_platform_cros_util_unittest_SOURCES = src/platform-cros-util.c
@@ -60,10 +60,10 @@ index f3a6bcd..68479b5 100644
 +noinst_PROGRAMS+= src/platform-cros-util_unittest
 +endif
 +
- src_tlsdate_routeup_CPPFLAGS = -DROUTEUP_MAIN
- src_tlsdate_routeup_SOURCES = src/routeup.c
- src_tlsdate_routeup_SOURCES+= src/util.c
-@@ -38,6 +46,7 @@ src_tlsdated_SOURCES+= src/dbus.c
+ if TARGET_FREEBSD
+ bin_PROGRAMS+= src/tlsdate
+ bin_PROGRAMS+= src/tlsdate-helper
+@@ -208,6 +216,7 @@ src_tlsdated_SOURCES+= src/dbus.c
  endif
  if HAVE_CROS
  src_tlsdated_SOURCES+= src/platform-cros.c
@@ -71,11 +71,10 @@ index f3a6bcd..68479b5 100644
  endif
  if HAVE_SECCOMP_FILTER
  src_tlsdated_SOURCES+= src/seccomp.c
-diff --git a/src/platform-cros-util-unittest.c b/src/platform-cros-util-unittest.c
-new file mode 100644
-index 0000000..a78d9ec
+Index: tlsdate/src/platform-cros-util-unittest.c
+===================================================================
 --- /dev/null
-+++ b/src/platform-cros-util-unittest.c
++++ tlsdate/src/platform-cros-util-unittest.c
 @@ -0,0 +1,96 @@
 +/*
 + * platform-cros-unittest.c - CrOS platform unit tests
@@ -173,11 +172,10 @@ index 0000000..a78d9ec
 +}
 +
 +TEST_HARNESS_MAIN
-diff --git a/src/platform-cros-util.c b/src/platform-cros-util.c
-new file mode 100644
-index 0000000..112000f
+Index: tlsdate/src/platform-cros-util.c
+===================================================================
 --- /dev/null
-+++ b/src/platform-cros-util.c
++++ tlsdate/src/platform-cros-util.c
 @@ -0,0 +1,113 @@
 +/*
 + * platform-cros-util.c - Utility code for platform-cros.c
@@ -292,11 +290,10 @@ index 0000000..112000f
 +      return;
 +    }
 +}
-diff --git a/src/platform-cros-util.h b/src/platform-cros-util.h
-new file mode 100644
-index 0000000..7e45338
+Index: tlsdate/src/platform-cros-util.h
+===================================================================
 --- /dev/null
-+++ b/src/platform-cros-util.h
++++ tlsdate/src/platform-cros-util.h
 @@ -0,0 +1,17 @@
 +/*
 + * platform-cros-util.h - Utility code for platform-cros.c
@@ -315,10 +312,10 @@ index 0000000..7e45338
 +void canonicalize_pac (const char *pac_fmt, char *proxy_url, size_t len);
 +
 +#endif  /* PLATFORM_CROS_H_ */
-diff --git a/src/platform-cros.c b/src/platform-cros.c
-index 77d189f..a49d261 100644
---- a/src/platform-cros.c
-+++ b/src/platform-cros.c
+Index: tlsdate/src/platform-cros.c
+===================================================================
+--- tlsdate.orig/src/platform-cros.c
++++ tlsdate/src/platform-cros.c
 @@ -19,6 +19,7 @@
  
  #include "src/dbus.h"
@@ -327,11 +324,10 @@ index 77d189f..a49d261 100644
  #include "src/tlsdate.h"
  #include "src/util.h"
  
-@@ -59,107 +60,6 @@ struct platform_state
-   uint32_t resolve_network_proxy_serial;
+@@ -60,107 +61,6 @@ struct platform_state
  };
  
--static
+ static
 -bool
 -get_valid_hostport (const char *hostport, char *out, size_t len)
 -{
@@ -432,9 +428,7 @@ index 77d189f..a49d261 100644
 -    }
 -}
 -
- static
+-static
  DBusHandlerResult
  handle_service_change (DBusConnection *connection,
--- 
-2.20.1
-
+                        DBusMessage *message,

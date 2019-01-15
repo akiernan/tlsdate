@@ -22,11 +22,11 @@ Reviewed-by: Dan Erat <derat@chromium.org>
  src/tlsdate.h         |  2 ++
  4 files changed, 28 insertions(+), 2 deletions(-)
 
-diff --git a/src/events/time_set.c b/src/events/time_set.c
-index 9b3c7f3..de85007 100644
---- a/src/events/time_set.c
-+++ b/src/events/time_set.c
-@@ -61,7 +61,7 @@ handle_time_setter (struct state *state, int status)
+Index: tlsdate/src/events/time_set.c
+===================================================================
+--- tlsdate.orig/src/events/time_set.c
++++ tlsdate/src/events/time_set.c
+@@ -62,7 +62,7 @@ handle_time_setter (struct state *state,
        error ("[event:%s] time setter exited gracefully", __func__);
        break;
      case SETTER_SET_ERR:
@@ -35,7 +35,7 @@ index 9b3c7f3..de85007 100644
        break;
      case SETTER_NO_RTC:
        error ("[event:%s] time setter could sync rtc", __func__);
-@@ -72,6 +72,9 @@ handle_time_setter (struct state *state, int status)
+@@ -73,6 +73,9 @@ handle_time_setter (struct state *state,
      case SETTER_READ_ERR:
        error ("[event:%s] time setter could not read time", __func__);
        break;
@@ -45,24 +45,24 @@ index 9b3c7f3..de85007 100644
      default:
        error ("[event:%s] received bogus status from time setter: %d",
               __func__, status);
-diff --git a/src/seccomp.c b/src/seccomp.c
-index 41cd6f7..aff26e5 100644
---- a/src/seccomp.c
-+++ b/src/seccomp.c
-@@ -104,6 +104,8 @@ enable_setter_seccomp (void)
-     SC_ALLOW (close),
-     SC_ALLOW (munmap),
+Index: tlsdate/src/seccomp.c
+===================================================================
+--- tlsdate.orig/src/seccomp.c
++++ tlsdate/src/seccomp.c
+@@ -90,6 +90,8 @@ enable_setter_seccomp (void)
+     SC_ALLOW (write),
+     SC_ALLOW (pwritev),
  
 +    SC_ALLOW (adjtimex),
 +    SC_ALLOW (gettimeofday),
      SC_ALLOW (settimeofday),
-     SC_ALLOW (read),
-     SC_ALLOW (write),
-diff --git a/src/tlsdate-setter.c b/src/tlsdate-setter.c
-index fccb987..f5729b4 100644
---- a/src/tlsdate-setter.c
-+++ b/src/tlsdate-setter.c
-@@ -181,7 +181,26 @@ time_setter_coprocess (int time_fd, int notify_fd, struct state *state)
+     SC_ALLOW (ioctl), /* TODO(wad) filter for fd and RTC_SET_TIME */
+ #ifdef __NR_time /* This is required for x86 systems */
+Index: tlsdate/src/tlsdate-setter.c
+===================================================================
+--- tlsdate.orig/src/tlsdate-setter.c
++++ tlsdate/src/tlsdate-setter.c
+@@ -147,7 +147,26 @@ time_setter_coprocess (int time_fd, int 
            status = SETTER_BAD_TIME;
            if (!state->opts.dry_run)
              {
@@ -90,11 +90,11 @@ index fccb987..f5729b4 100644
                  {
                    status = SETTER_SET_ERR;
                    goto notify_and_die;
-diff --git a/src/tlsdate.h b/src/tlsdate.h
-index 9a836c1..c118d89 100644
---- a/src/tlsdate.h
-+++ b/src/tlsdate.h
-@@ -39,6 +39,7 @@
+Index: tlsdate/src/tlsdate.h
+===================================================================
+--- tlsdate.orig/src/tlsdate.h
++++ tlsdate/src/tlsdate.h
+@@ -42,6 +42,7 @@
  #define SUBPROCESS_TRIES 10
  #define SUBPROCESS_WAIT_BETWEEN_TRIES 10
  #define RESOLVER_TIMEOUT 30
@@ -102,7 +102,7 @@ index 9a836c1..c118d89 100644
  /* Invalidate the network sync once per day. */
  #define STEADY_STATE_INTERVAL (60*60*24)
  /* Check if the clock has jumped every four hours. */
-@@ -77,6 +78,7 @@
+@@ -80,6 +81,7 @@
  #define SETTER_SET_ERR 5
  #define SETTER_NO_SBOX 6
  #define SETTER_NO_RTC 7
@@ -110,6 +110,3 @@ index 9a836c1..c118d89 100644
  
  #define TEST_HOST 'w', 'w', 'w', '.', 'g', 'o', 'o', 'g', 'l', 'e', '.', \
                    'c', 'o', 'm'
--- 
-2.20.1
-

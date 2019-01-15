@@ -23,18 +23,15 @@ Reviewed-by: Mike Frysinger <vapier@chromium.org>
  src/tlsdate-helper.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/src/tlsdate-helper.c b/src/tlsdate-helper.c
-index 02dac7a..7455d39 100644
---- a/src/tlsdate-helper.c
-+++ b/src/tlsdate-helper.c
-@@ -745,6 +745,7 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion)
-       SSL_set_info_callback (ssl, openssl_time_callback);
-     }
-   SSL_set_mode (ssl, SSL_MODE_AUTO_RETRY);
+Index: tlsdate/src/tlsdate-helper.c
+===================================================================
+--- tlsdate.orig/src/tlsdate-helper.c
++++ tlsdate/src/tlsdate-helper.c
+@@ -1187,6 +1187,7 @@ run_ssl (uint32_t *time_map, int time_is
+   }
+ 
+   SSL_set_mode(ssl, SSL_MODE_AUTO_RETRY);
 +  SSL_set_tlsext_host_name (ssl, host);
-   verb ("V: opening socket to %s:%s\n", host, port);
-   if ( (1 != BIO_set_conn_hostname (s_bio, host)) ||
-        (1 != BIO_set_conn_port (s_bio, port)))
--- 
-2.20.1
-
+   verb("V: opening socket to %s:%s", host, port);
+   if ( (1 != BIO_set_conn_hostname(s_bio, host)) ||
+        (1 != BIO_set_conn_port(s_bio, port)) )

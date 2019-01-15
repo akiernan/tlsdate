@@ -25,10 +25,10 @@ Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
  src/platform-cros.c | 83 +++++++++++----------------------------------
  1 file changed, 20 insertions(+), 63 deletions(-)
 
-diff --git a/src/platform-cros.c b/src/platform-cros.c
-index 24c532f..77d189f 100644
---- a/src/platform-cros.c
-+++ b/src/platform-cros.c
+Index: tlsdate/src/platform-cros.c
+===================================================================
+--- tlsdate.orig/src/platform-cros.c
++++ tlsdate/src/platform-cros.c
 @@ -25,10 +25,11 @@
  static const char kMatchFormat[] = "interface='%s',member='%s',arg0='%s'";
  static const char kMatchNoArgFormat[] = "interface='%s',member='%s'";
@@ -45,7 +45,7 @@ index 24c532f..77d189f 100644
  
  static const char kDBusInterface[] = "org.freedesktop.DBus";
  static const char kNameOwnerChanged[] = "NameOwnerChanged";
-@@ -42,9 +43,6 @@ static const char kMember[] = "PropertyChanged";
+@@ -42,9 +43,6 @@ static const char kMember[] = "PropertyC
  static const char kProxyConfig[] = "ProxyConfig";
  static const char kDefaultService[] = "DefaultService";
  
@@ -55,7 +55,7 @@ index 24c532f..77d189f 100644
  /* TODO(wad) Integrate with cros_system_api/dbus/service_constants.h */
  static const char kPowerManagerInterface[] = "org.chromium.PowerManager";
  static const char kSuspendDone[] = "SuspendDone";
-@@ -169,11 +167,9 @@ handle_service_change (DBusConnection *connection,
+@@ -169,11 +167,9 @@ handle_service_change (DBusConnection *c
                         struct platform_state *ctx)
  {
    DBusMessageIter iter, subiter;
@@ -64,22 +64,22 @@ index 24c532f..77d189f 100644
    const char *pval;
    const char *service;
 -  dbus_error_init (&error);
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
    /* TODO(wad) Track the current DefaultService only fire when it changes */
    service = dbus_message_get_path (message);
-@@ -211,11 +207,9 @@ handle_manager_change (DBusConnection *connection,
+@@ -211,11 +207,9 @@ handle_manager_change (DBusConnection *c
                         struct platform_state *ctx)
  {
    DBusMessageIter iter, subiter;
 -  DBusError error;
    const char *pname;
    const char *pval;
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
 -  dbus_error_init (&error);
    if (!dbus_message_iter_init (message, &iter))
      return DBUS_HANDLER_RESULT_HANDLED;
    if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
-@@ -260,46 +254,22 @@ handle_proxy_change (DBusConnection *connection,
+@@ -260,44 +254,21 @@ handle_proxy_change (DBusConnection *con
                       struct platform_state *ctx)
  {
    DBusMessageIter iter;
@@ -89,7 +89,7 @@ index 24c532f..77d189f 100644
 -  char time_host[MAX_PROXY_URL];
 -  int url_len = 0;
    struct source *src = ctx->state->opts.sources;
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
    if (ctx->state->opts.cur_source && ctx->state->opts.cur_source->next)
      src = ctx->state->opts.cur_source->next;
    if (!ctx->state->resolving)
@@ -101,7 +101,6 @@ index 24c532f..77d189f 100644
      }
 -  dbus_error_init (&error);
 -  /* Shill emits string:ProxyConfig variant string:"..." */
-+
    if (!dbus_message_iter_init (message, &iter))
      return DBUS_HANDLER_RESULT_HANDLED;
    if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
@@ -123,18 +122,16 @@ index 24c532f..77d189f 100644
 -    }
 -  if (!dbus_message_iter_next (&iter))
 -    return DBUS_HANDLER_RESULT_HANDLED;
--  if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
--    return DBUS_HANDLER_RESULT_HANDLED;
+   if (dbus_message_iter_get_arg_type (&iter) != DBUS_TYPE_STRING)
+     return DBUS_HANDLER_RESULT_HANDLED;
    dbus_message_iter_get_basic (&iter, &pval);
-   ctx->state->resolving = 0;
-   canonicalize_pac (pval, ctx->state->dynamic_proxy, sizeof (ctx->state->dynamic_proxy));
-@@ -314,17 +284,15 @@ handle_dbus_change (DBusConnection *connection,
+@@ -314,17 +285,15 @@ handle_dbus_change (DBusConnection *conn
                      struct platform_state *ctx)
  {
    DBusMessageIter iter;
 -  DBusError error;
    const char *pname;
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
 -  dbus_error_init (&error);
    if (!dbus_message_iter_init (message, &iter))
      return DBUS_HANDLER_RESULT_HANDLED;
@@ -147,7 +144,7 @@ index 24c532f..77d189f 100644
      return DBUS_HANDLER_RESULT_HANDLED;
    action_kickoff_time_sync (-1, EV_TIMEOUT, ctx->state);
    return DBUS_HANDLER_RESULT_HANDLED;
-@@ -366,7 +334,8 @@ action_resolve_proxy (evutil_socket_t fd, short what, void *arg)
+@@ -366,7 +335,8 @@ action_resolve_proxy (evutil_socket_t fd
                               ctx->resolve_msg[src->id],
                               &ctx->resolve_network_proxy_serial))
      {
@@ -157,7 +154,7 @@ index 24c532f..77d189f 100644
        return;
      }
  }
-@@ -398,15 +367,13 @@ dbus_filter (DBusConnection *connection, DBusMessage *message, void *data)
+@@ -398,15 +368,13 @@ dbus_filter (DBusConnection *connection,
      return handle_service_change (connection, message, state);
    if (dbus_message_is_signal (message, kManagerInterface, kMember))
      return handle_manager_change (connection, message, state);
@@ -174,7 +171,7 @@ index 24c532f..77d189f 100644
        info ("[cros] skipping proxy resolution for now");
        /* Fire off tlsdate rather than letting it fail silently. */
        state->resolve_network_proxy_serial = 0;
-@@ -421,7 +388,7 @@ dbus_filter (DBusConnection *connection, DBusMessage *message, void *data)
+@@ -421,7 +389,7 @@ dbus_filter (DBusConnection *connection,
        if (serial == state->resolve_network_proxy_serial)
          {
            state->resolve_network_proxy_serial = 0;
@@ -183,7 +180,7 @@ index 24c532f..77d189f 100644
          }
        info ("[cros] unknown DBus METHOD_RETURN seen: %u", serial);
        return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-@@ -477,8 +444,6 @@ new_resolver_message(const struct source *src)
+@@ -477,8 +445,6 @@ new_resolver_message(const struct source
  {
    char time_host[MAX_PROXY_URL];
    const char *time_host_ptr = time_host;
@@ -192,7 +189,7 @@ index 24c532f..77d189f 100644
    int url_len;
    DBusMessage *res;
    DBusMessageIter args;
-@@ -486,8 +451,9 @@ new_resolver_message(const struct source *src)
+@@ -486,8 +452,9 @@ new_resolver_message(const struct source
      {
        return NULL;
      }
@@ -204,7 +201,7 @@ index 24c532f..77d189f 100644
    if (!res)
      {
        error ("[cros] could not setup dynamic proxy for source %d", src->id);
-@@ -504,12 +470,7 @@ new_resolver_message(const struct source *src)
+@@ -504,12 +471,7 @@ new_resolver_message(const struct source
     * char*, and we need to create a local pointer to get this. See the warning
     * in dbus_message_append_args's documentation for more details. */
    dbus_message_iter_init_append (res, &args);
@@ -218,7 +215,7 @@ index 24c532f..77d189f 100644
      {
        fatal ("[cros] could not append arguments for resolver message");
      }
-@@ -525,7 +486,6 @@ platform_init_cros (struct state *state)
+@@ -525,7 +487,6 @@ platform_init_cros (struct state *state)
    struct source *src = NULL;
    int sources = 0;
    DBusConnection *conn = dbus_state->conn;
@@ -226,7 +223,7 @@ index 24c532f..77d189f 100644
    struct platform_state *platform_state =
        calloc (1, sizeof (struct platform_state));
    if (!platform_state)
-@@ -533,15 +493,12 @@ platform_init_cros (struct state *state)
+@@ -533,15 +494,12 @@ platform_init_cros (struct state *state)
        error ("[cros] could not allocate platform_state");
        return -1;
      }
@@ -245,7 +242,7 @@ index 24c532f..77d189f 100644
        add_match (conn, kPowerManagerInterface, kSuspendDone, NULL))
      return 1;
  
-@@ -592,7 +549,7 @@ platform_init_cros (struct state *state)
+@@ -592,7 +550,7 @@ platform_init_cros (struct state *state)
    if (!dbus_connection_add_filter (conn,
                                     dbus_filter, platform_state, NULL))
      {
@@ -254,6 +251,3 @@ index 24c532f..77d189f 100644
        return 1;
      }
    return 0;
--- 
-2.20.1
-

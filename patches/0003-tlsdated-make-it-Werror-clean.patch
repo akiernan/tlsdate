@@ -23,11 +23,11 @@ Tested-by: Will Drewry <wad@chromium.org>
  src/tlsdated-unittest.c | 2 +-
  4 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/src/dbus.c b/src/dbus.c
-index 81bda4b..759c5f0 100644
---- a/src/dbus.c
-+++ b/src/dbus.c
-@@ -32,8 +32,10 @@ static const char *kServiceCanSetTime = kServiceCanSetTimeData;
+Index: tlsdate/src/dbus.c
+===================================================================
+--- tlsdate.orig/src/dbus.c
++++ tlsdate/src/dbus.c
+@@ -32,8 +32,10 @@ static const char *kServiceCanSetTime = 
  static const char kServiceLastSyncInfoData[] = "LastSyncInfo";
  static const char *kServiceLastSyncInfo = kServiceLastSyncInfoData;
  
@@ -38,24 +38,24 @@ index 81bda4b..759c5f0 100644
  
  static
  short
-diff --git a/src/platform-cros.c b/src/platform-cros.c
-index 7ed14d4..2acc54e 100644
---- a/src/platform-cros.c
-+++ b/src/platform-cros.c
-@@ -263,9 +263,6 @@ handle_suspend_done (DBusConnection *connection,
+Index: tlsdate/src/platform-cros.c
+===================================================================
+--- tlsdate.orig/src/platform-cros.c
++++ tlsdate/src/platform-cros.c
+@@ -263,9 +263,6 @@ handle_suspend_done (DBusConnection *con
                       DBusMessage *message,
                       struct platform_state *ctx)
  {
 -  DBusMessageIter iter;
 -  DBusError error;
 -  const char *pname;
-   debug ("[event:cros:%s]: fired", __func__);
+   verb_debug ("[event:cros:%s]: fired", __func__);
    /* Coming back from resume, trigger a continuity and time
     * check just in case none of the other events happen.
-diff --git a/src/test_harness.h b/src/test_harness.h
-index 3fd118a..00a7bee 100644
---- a/src/test_harness.h
-+++ b/src/test_harness.h
+Index: tlsdate/src/test_harness.h
+===================================================================
+--- tlsdate.orig/src/test_harness.h
++++ tlsdate/src/test_harness.h
 @@ -204,7 +204,7 @@
  #define _TEST(test_name) \
    static void test_name(struct __test_metadata *_metadata); \
@@ -76,19 +76,3 @@ index 3fd118a..00a7bee 100644
     }; \
    static void __attribute__((constructor)) \
        _register_##fixture_name##_##test_name(void) { \
-diff --git a/src/tlsdated-unittest.c b/src/tlsdated-unittest.c
-index 0709467..bd76f72 100644
---- a/src/tlsdated-unittest.c
-+++ b/src/tlsdated-unittest.c
-@@ -126,7 +126,7 @@ FIXTURE (tlsdate)
- 
- FIXTURE_SETUP (tlsdate)
- {
--  memset (self, 0, sizeof (self));
-+  memset (self, 0, sizeof (*self));
-   /* TODO(wad) make this use the same function tlsdated uses. */
-   self->state.base = event_base_new();
-   set_conf_defaults (&self->state.opts);
--- 
-2.20.1
-
