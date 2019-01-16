@@ -15,13 +15,13 @@ Commit-Ready: Mike Frysinger <vapier@chromium.org>
 Tested-by: Mike Frysinger <vapier@chromium.org>
 Reviewed-by: Mike Frysinger <vapier@chromium.org>
 ---
- init/tlsdated.conf | 15 ++++++++-------
+ init/tlsdated-cros.conf | 15 ++++++++-------
  1 file changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+diff --git a/init/tlsdated-cros.conf b/init/tlsdated-cros.conf
 index f96ba30..763f1cb 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
+--- a/init/tlsdated-cros.conf
++++ b/init/tlsdated-cros.conf
 @@ -13,13 +13,14 @@ respawn
  # have specifically for talking to Google systems.
  env GOOGLE_CERTS=/usr/share/chromeos-ca-certificates

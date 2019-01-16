@@ -12,13 +12,13 @@ Commit-Ready: Mike Frysinger <vapier@chromium.org>
 Tested-by: Mike Frysinger <vapier@chromium.org>
 Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
 ---
- init/tlsdated.conf | 34 ++++++++++++++++++++++++++++++++--
+ init/tlsdated-cros.conf | 34 ++++++++++++++++++++++++++++++++--
  1 file changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+diff --git a/init/tlsdated-cros.conf b/init/tlsdated-cros.conf
 index 90a6ef1..ec45916 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
+--- a/init/tlsdated-cros.conf
++++ b/init/tlsdated-cros.conf
 @@ -9,6 +9,8 @@ start on started system-services
  stop on stopping system-services
  respawn

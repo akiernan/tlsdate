@@ -15,13 +15,13 @@ Commit-Ready: Mike Frysinger <vapier@chromium.org>
 Tested-by: Mike Frysinger <vapier@chromium.org>
 Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
 ---
- init/tlsdated.conf | 6 ++++++
+ init/tlsdated-cros.conf | 6 ++++++
  1 file changed, 6 insertions(+)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+diff --git a/init/tlsdated-cros.conf b/init/tlsdated-cros.conf
 index ec45916..c801a87 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
+--- a/init/tlsdated-cros.conf
++++ b/init/tlsdated-cros.conf
 @@ -19,6 +19,12 @@ pre-start script
    mkdir -m 755 -p /var/cache/tlsdated
    # Make sure the timestamp file has the proper permissions if it exists.

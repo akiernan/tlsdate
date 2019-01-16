@@ -14,13 +14,13 @@ Tested-by: Mike Frysinger <vapier@chromium.org>
 Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
 Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
 ---
- init/tlsdated.conf | 5 ++++-
+ init/tlsdated-cros.conf | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
+diff --git a/init/tlsdated-cros.conf b/init/tlsdated-cros.conf
 index f5b46a4..f96ba30 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
+--- a/init/tlsdated-cros.conf
++++ b/init/tlsdated-cros.conf
 @@ -9,8 +9,11 @@ start on started system-services
  stop on stopping system-services
  respawn

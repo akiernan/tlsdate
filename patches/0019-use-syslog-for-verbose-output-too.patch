@@ -16,14 +16,14 @@ Tested-by: Mike Frysinger <vapier@chromium.org>
 Reviewed-by: Luis Hector Chavez <lhchavez@chromium.org>
 Reviewed-by: Jorge Lucangeli Obes <jorgelo@chromium.org>
 ---
- init/tlsdated.conf | 3 +--
+ init/tlsdated-cros.conf | 3 +--
  src/util.c         | 3 +++
  2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/init/tlsdated.conf b/init/tlsdated.conf
-index 763f1cb..90a6ef1 100644
---- a/init/tlsdated.conf
-+++ b/init/tlsdated.conf
+Index: tlsdate/init/tlsdated-cros.conf
+===================================================================
+--- tlsdate.orig/init/tlsdated-cros.conf
++++ tlsdate/init/tlsdated-cros.conf
 @@ -22,5 +22,4 @@ end script
  # When it runs tlsdate, tlsdated stitches together an argument vector for it
  # as follows: it begins with everything supplied to it after the --, then
@@ -31,20 +31,3 @@ index 763f1cb..90a6ef1 100644
 -exec tlsdated -v -- /usr/bin/tlsdate -v -C "$GOOGLE_CERTS" -l \
 -    2>&1 | logger -t tlsdate
 +exec tlsdated -v -- /usr/bin/tlsdate -v -C "$GOOGLE_CERTS" -l
-diff --git a/src/util.c b/src/util.c
-index 2ae748e..e344b62 100644
---- a/src/util.c
-+++ b/src/util.c
-@@ -42,6 +42,9 @@ verb (const char *fmt, ...)
-   va_start (ap, fmt);
-   vfprintf (stderr, fmt, ap);
-   va_end (ap);
-+  va_start (ap, fmt);
-+  vsyslog (LOG_INFO, fmt, ap);
-+  va_end (ap);
- }
- void API logat (int isverbose, const char *fmt, ...)
- {
--- 
-2.20.1
-
