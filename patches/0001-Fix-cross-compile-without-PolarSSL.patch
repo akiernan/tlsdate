@@ -1,0 +1,29 @@
+From abdcb97954b9d5efb4d591867c453d4b7fdbf8cd Mon Sep 17 00:00:00 2001
+From: Andrew Pilloud <andrewpilloud@igneoussystems.com>
+Date: Tue, 13 Dec 2016 21:25:25 -0800
+Subject: [PATCH] Fix cross compile without PolarSSL
+
+---
+ configure.ac | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 9fc9faf..800a759 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -107,12 +107,6 @@ AS_IF([test "x${OPT_POLARSSL}" != "xno"], [
+     addcflags=-I${POLARSSL_DIR}/include
+     polarssllib=${POLARSSL_DIR}/lib$libsuff
+ 
+-    LDFLAGS="$LDFLAGS $addld"
+-    AS_IF([test "$addcflags" != "-I/usr/include"], [
+-        AX_APPEND_COMPILE_FLAGS(["$addcflags"])
+-       CPPFLAGS="$CPPFLAGS $addcflags"
+-    ])
+-
+     AC_CHECK_LIB(polarssl, ssl_init,
+      [
+        AC_DEFINE(USE_POLARSSL, 1, [if PolarSSL is enabled])
+-- 
+2.20.1
+

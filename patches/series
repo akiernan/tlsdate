@@ -16,3 +16,8 @@
 0024-add-getpid-and-prlimit-to-seccomp.patch
 0025-Adjust-clock-gradually-when-possible.patch
 0026-make-tlsdated-less-noisy-when-cros-debug-is-set.patch
+0002-Add-support-for-http-yes-in-tlsdated.conf.patch
+0003-Merge-changes-for-TLSv1.1-and-TLSv1.2.patch
+0001-Fix-cross-compile-without-PolarSSL.patch
+ebae51441b717d5a286fc06f21e5cd8a8f1d2dc9.patch
+4320ba0d9f4b963f8b65eeffa65ab31da975281b.patch

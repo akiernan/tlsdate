@@ -1,0 +1,23 @@
+From ebae51441b717d5a286fc06f21e5cd8a8f1d2dc9 Mon Sep 17 00:00:00 2001
+From: Ashley Chaloner <ashley@suade.org>
+Date: Fri, 9 Jun 2017 14:01:40 +0000
+Subject: [PATCH] Remove semicolon, so next statement is guarded by the
+ if-statement
+
+---
+ src/util.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/util.c b/src/util.c
+index 6bb279c..747dea1 100644
+--- a/src/util.c
++++ b/src/util.c
+@@ -122,7 +122,7 @@ void no_new_privs(void)
+   // privileges.
+   if (0 == prctl (PR_GET_NO_NEW_PRIVS)) {
+     // Remove the ability to regain privilegess
+-    if (0 != prctl (PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
++    if (0 != prctl (PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
+       die ("Failed to PR_SET_NO_NEW_PRIVS");
+   } else {
+     verb ("V: Parent process has already set PR_SET_NO_NEW_PRIVS");

@@ -1,0 +1,92 @@
+From 9572b9c43f7f68bdf152934b43873c2b908280d5 Mon Sep 17 00:00:00 2001
+From: Alex Kiernan <alex.kiernan@gmail.com>
+Date: Thu, 20 Dec 2018 07:17:53 +0000
+Subject: [PATCH] Add support for `http yes` in tlsdated.conf
+
+As a parallel to `--http` on `tlsdate`, allow `http yes` within a source
+clause in `tlsdated.conf`.
+---
+ src/tlsdate-monitor.c |  4 +++-
+ src/tlsdate.h         |  1 +
+ src/tlsdated.c        | 11 ++++++++---
+ 3 files changed, 12 insertions(+), 4 deletions(-)
+
+Index: tlsdate/src/tlsdate-monitor.c
+===================================================================
+--- tlsdate.orig/src/tlsdate-monitor.c
++++ tlsdate/src/tlsdate-monitor.c
+@@ -40,7 +40,7 @@ build_argv (struct opts *opts)
+   if (argc > 1024)
+     return NULL;
+   argc++; /* uncounted null terminator */
+-  argc += 9;  /* -H host -p port -x proxy -Vraw -n -l */
++  argc += 10;  /* -H host -p port -x proxy -Vraw -n -l */
+   new_argv = malloc (argc * sizeof (char *));
+   if (!new_argv)
+     return NULL;
+@@ -63,6 +63,8 @@ build_argv (struct opts *opts)
+   new_argv[argc++] = "-n";
+   if (opts->leap)
+     new_argv[argc++] = "-l";
++  if (opts->cur_source->http)
++    new_argv[argc++] = "-w";
+   new_argv[argc++] = NULL;
+   return new_argv;
+ }
+Index: tlsdate/src/tlsdated.c
+===================================================================
+--- tlsdate.orig/src/tlsdated.c
++++ tlsdate/src/tlsdated.c
+@@ -221,7 +221,7 @@ parse_argv (struct opts *opts, int argc,
+ }
+ 
+ static
+-void add_source_to_conf (struct opts *opts, char *host, char *port, char *proxy)
++void add_source_to_conf (struct opts *opts, char *host, char *port, char *proxy, int http)
+ {
+   struct source *s;
+   struct source *source = (struct source *) calloc (1, sizeof *source);
+@@ -233,6 +233,7 @@ void add_source_to_conf (struct opts *op
+   source->port = strdup (port);
+   if (!source->port)
+     fatal ("out of memory for port");
++  source->http = http;
+   if (proxy)
+     {
+       source->proxy = strdup (proxy);
+@@ -259,6 +260,7 @@ parse_source (struct opts *opts, struct 
+   char *host = NULL;
+   char *port = NULL;
+   char *proxy = NULL;
++  int http = 0;
+   /* a source entry:
+    * source
+    *   host <host>
+@@ -276,6 +278,8 @@ parse_source (struct opts *opts, struct 
+         port = conf->value;
+       else if (!strcmp (conf->key, "proxy"))
+         proxy = conf->value;
++      else if (!strcmp (conf->key, "http"))
++        http = conf->value ? !strcmp (conf->value, "yes") : 1;
+       else
+         fatal ("malformed config: '%s' in source stanza", conf->key);
+       conf = conf->next;
+@@ -284,7 +288,7 @@ parse_source (struct opts *opts, struct 
+     fatal ("unclosed source stanza");
+   if (!host || !port)
+     fatal ("incomplete source stanza (needs host, port)");
+-  add_source_to_conf (opts, host, port, proxy);
++  add_source_to_conf (opts, host, port, proxy, http);
+   return conf;
+ }
+ 
+@@ -469,7 +473,8 @@ main (int argc, char *argv[], char *envp
+   load_conf (&state.opts);
+   check_conf (&state);
+   if (!state.opts.sources)
+-    add_source_to_conf (&state.opts, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PROXY);
++    add_source_to_conf (&state.opts, DEFAULT_HOST, DEFAULT_PORT, DEFAULT_PROXY,
++                        0);
+   state.base = base;
+   state.envp = envp;
+   state.backoff = state.opts.wait_between_tries;

@@ -1,0 +1,23 @@
+From 4320ba0d9f4b963f8b65eeffa65ab31da975281b Mon Sep 17 00:00:00 2001
+From: Kevin Cernekee <cernekee@gmail.com>
+Date: Mon, 18 Apr 2016 16:17:31 -0700
+Subject: [PATCH] Fix typo in error message
+
+Signed-off-by: Kevin Cernekee <cernekee@chromium.org>
+---
+ src/tlsdate-helper.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: tlsdate/src/tlsdate-helper.c
+===================================================================
+--- tlsdate.orig/src/tlsdate-helper.c
++++ tlsdate/src/tlsdate-helper.c
+@@ -1160,7 +1160,7 @@ run_ssl (uint32_t *time_map, int time_is
+   {
+     if (-1 == stat(ca_cert_container, &statbuf))
+     {
+-      die("Unable to stat CA certficate container %s", ca_cert_container);
++      die("Unable to stat CA certificate container %s", ca_cert_container);
+     } else
+     {
+       switch (statbuf.st_mode & S_IFMT)
