@@ -1,0 +1,23 @@
+From 23b824bd953a3d099fe010676dabcbcff8acbcce Mon Sep 17 00:00:00 2001
+From: Alex Kiernan <alex.kiernan@hivehome.com>
+Date: Wed, 16 Jan 2019 07:10:41 +0000
+Subject: [PATCH] travis: Add libevent-dev to dependencies
+
+---
+ .travis.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.travis.yml b/.travis.yml
+index 57e3045..13b7389 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -8,5 +8,5 @@ branches:
+     - master
+ before_install:
+   - sudo apt-get update -qq
+-  - sudo apt-get install -qq autotools-dev dh-apparmor hardening-wrapper libssl-dev autoconf automake pkg-config libtool
++  - sudo apt-get install -qq autotools-dev dh-apparmor hardening-wrapper libssl-dev autoconf automake pkg-config libtool libevent-dev
+ script: ./configure && make && make test
+-- 
+2.20.1
+

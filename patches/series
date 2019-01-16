@@ -27,3 +27,4 @@
 0001-Fix-cross-compile-without-PolarSSL.patch
 ebae51441b717d5a286fc06f21e5cd8a8f1d2dc9.patch
 4320ba0d9f4b963f8b65eeffa65ab31da975281b.patch
+0001-travis-Add-libevent-dev-to-dependencies.patch
