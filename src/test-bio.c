@@ -34,7 +34,7 @@ struct test_ctx
 
 static struct test_ctx *bio_ctx (BIO *b)
 {
-  struct test_ctx *ctx = b->ptr;
+  struct test_ctx *ctx = BIO_get_data(b);
   assert (ctx->magic == kMagic);
   return ctx;
 }
@@ -70,16 +70,15 @@ int test_new (BIO *b)
   ctx->insz = 0;
   ctx->out = NULL;
   ctx->outsz = 0;
-  b->init = 1;
-  b->flags = 0;
-  b->ptr = ctx;
+  BIO_set_init(b, 1);
+  BIO_set_data(b, ctx);
   return 1;
 }
 
 int test_free (BIO *b)
 {
   struct test_ctx *ctx;
-  if (!b || !b->ptr)
+  if (!b || !BIO_get_data(b))
     return 1;
   ctx = bio_ctx (b);
   free (ctx->in);
@@ -114,23 +113,21 @@ long test_callback_ctrl (BIO *b, int cmd, bio_info_cb *fp)
   return 0;
 }
 
-BIO_METHOD test_methods =
-{
-  BIO_TYPE_SOCKET,
-  "test",
-  test_write,
-  test_read,
-  NULL,
-  NULL,
-  test_ctrl,
-  test_new,
-  test_free,
-  test_callback_ctrl,
-};
-
 BIO_METHOD *BIO_s_test()
 {
-  return &test_methods;
+  static BIO_METHOD *test_biom = NULL;
+
+  if (test_biom == NULL)
+    {
+     test_biom = BIO_meth_new(BIO_get_new_index(), "test");
+     BIO_meth_set_write(test_biom, test_write);
+     BIO_meth_set_read(test_biom, test_read);
+     BIO_meth_set_ctrl(test_biom, test_ctrl);
+     BIO_meth_set_create(test_biom, test_new);
+     BIO_meth_set_destroy(test_biom, test_free);
+     BIO_meth_set_callback_ctrl(test_biom, test_callback_ctrl);
+     }
+  return test_biom;
 }
 
 BIO API *BIO_new_test()

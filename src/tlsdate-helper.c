@@ -486,38 +486,10 @@ read_http_date_from_bio(BIO *bio, uint32_t *result)
   return -2;
 }
 
-/** helper function for 'malloc' */
-static void *
-xmalloc (size_t size)
-{
-  void *ptr;
-
-  if (0 == size)
-    die("xmalloc: zero size");
-
-  ptr = malloc(size);
-  if (NULL == ptr)
-    die("xmalloc: out of memory (allocating %zu bytes)", size);
-
-  return ptr;
-}
-
-
-/** helper function for 'free' */
-static void
-xfree (void *ptr)
-{
-  if (NULL == ptr)
-    die("xfree: NULL pointer given as argument");
-
-  free(ptr);
-}
-
 void
 openssl_time_callback (const SSL* ssl, int where, int ret)
 {
-  if (where == SSL_CB_CONNECT_LOOP &&
-      (ssl->state == SSL3_ST_CR_SRVR_HELLO_A || ssl->state == SSL3_ST_CR_SRVR_HELLO_B))
+  if (where == SSL_CB_CONNECT_LOOP && SSL_get_state(ssl) == TLS_ST_CR_SRVR_HELLO)
   {
     // XXX TODO: If we want to trust the remote system for time,
     // can we just read that time out of the remote system and if the
@@ -530,7 +502,7 @@ openssl_time_callback (const SSL* ssl, int where, int ret)
     uint32_t max_reasonable_time = MAX_REASONABLE_TIME;
     uint32_t server_time;
     verb("V: freezing time for x509 verification");
-    memcpy(&server_time, ssl->s3->server_random, sizeof(uint32_t));
+    SSL_get_server_random(ssl, (unsigned char *)&server_time, sizeof server_time);
     if (compiled_time < ntohl(server_time)
         &&
         ntohl(server_time) < max_reasonable_time)
@@ -538,7 +510,7 @@ openssl_time_callback (const SSL* ssl, int where, int ret)
       verb("V: remote peer provided: %d, preferred over compile time: %d",
             ntohl(server_time), compiled_time);
       verb("V: freezing time with X509_VERIFY_PARAM_set_time");
-      X509_VERIFY_PARAM_set_time(ssl->ctx->cert_store->param,
+      X509_VERIFY_PARAM_set_time(X509_STORE_get0_param(SSL_CTX_get_cert_store(SSL_get_SSL_CTX(ssl))),
                                  (time_t) ntohl(server_time) + 86400);
     } else {
       die("V: the remote server is a false ticker! server: %d compile: %d",
@@ -550,47 +522,26 @@ openssl_time_callback (const SSL* ssl, int where, int ret)
 uint32_t
 get_certificate_keybits (EVP_PKEY *public_key)
 {
-  /*
-    In theory, we could use check_bitlen_dsa() and check_bitlen_rsa()
-   */
   uint32_t key_bits;
-  switch (public_key->type)
+  switch (EVP_PKEY_base_id(public_key))
   {
     case EVP_PKEY_RSA:
       verb("V: key type: EVP_PKEY_RSA");
-      key_bits = BN_num_bits(public_key->pkey.rsa->n);
-      break;
-    case EVP_PKEY_RSA2:
-      verb("V: key type: EVP_PKEY_RSA2");
-      key_bits = BN_num_bits(public_key->pkey.rsa->n);
       break;
     case EVP_PKEY_DSA:
       verb("V: key type: EVP_PKEY_DSA");
-      key_bits = BN_num_bits(public_key->pkey.dsa->p);
-      break;
-    case EVP_PKEY_DSA1:
-      verb("V: key type: EVP_PKEY_DSA1");
-      key_bits = BN_num_bits(public_key->pkey.dsa->p);
-      break;
-    case EVP_PKEY_DSA2:
-      verb("V: key type: EVP_PKEY_DSA2");
-      key_bits = BN_num_bits(public_key->pkey.dsa->p);
-      break;
-    case EVP_PKEY_DSA3:
-      verb("V: key type: EVP_PKEY_DSA3");
-      key_bits = BN_num_bits(public_key->pkey.dsa->p);
-      break;
-    case EVP_PKEY_DSA4:
-      verb("V: key type: EVP_PKEY_DSA4");
-      key_bits = BN_num_bits(public_key->pkey.dsa->p);
       break;
     case EVP_PKEY_DH:
       verb("V: key type: EVP_PKEY_DH");
-      key_bits = BN_num_bits(public_key->pkey.dh->pub_key);
       break;
     case EVP_PKEY_EC:
       verb("V: key type: EVP_PKEY_EC");
-      key_bits = EVP_PKEY_bits(public_key);
+      break;
+    case EVP_PKEY_ED448:
+      verb("V: key type: EVP_PKEY_ED448");
+      break;
+    case EVP_PKEY_ED25519:
+      verb("V: key type: EVP_PKEY_ED25519");
       break;
     // Should we also care about EVP_PKEY_HMAC and EVP_PKEY_CMAC?
     default:
@@ -598,315 +549,32 @@ get_certificate_keybits (EVP_PKEY *public_key)
       die ("unknown public key type");
       break;
   }
+  key_bits = EVP_PKEY_bits(public_key);
   verb ("V: keybits: %d", key_bits);
   return key_bits;
-}
-
-uint32_t
-dns_label_count(char *label, char *delim)
-{
-  char *label_tmp;
-  char *saveptr;
-  char *saveptr_tmp;
-  uint32_t label_count;
-
-  label_tmp = strdup(label);
-  label_count = 0;
-  saveptr = NULL;
-  saveptr_tmp = NULL;
-  saveptr = strtok_r(label_tmp, delim, &saveptr);
-  if (NULL != saveptr)
-  {
-    // Did we find our first label?
-    if (saveptr[0] != delim[0])
-    {
-      label_count++;
-    }
-    do
-    {
-      // Find all subsequent labels
-      label_count++;
-      saveptr_tmp = strtok_r(NULL, delim, &saveptr);
-    } while (NULL != saveptr_tmp);
-  }
-  verb_debug ("V: label found; total label count: %d", label_count);
-  free(label_tmp);
-  return label_count;
-}
-
-// first we split strings on '.'
-// then we call each split string a 'label'
-// Do not allow '*' for the top level domain label; eg never allow *.*.com
-// Do not allow '*' for subsequent subdomains; eg never allow *.foo.example.com
-// Do allow *.example.com
-uint32_t
-check_wildcard_match_rfc2595 (const char *orig_hostname,
-                      const char *orig_cert_wild_card)
-{
-  char *hostname;
-  char *hostname_to_free;
-  char *cert_wild_card;
-  char *cert_wild_card_to_free;
-  char *expected_label;
-  char *wildcard_label;
-  char *delim;
-  char *wildchar;
-  uint32_t ok;
-  uint32_t wildcard_encountered;
-  uint32_t label_count;
-
-  // First we copy the original strings
-  hostname = strndup(orig_hostname, strlen(orig_hostname));
-  cert_wild_card = strndup(orig_cert_wild_card, strlen(orig_cert_wild_card));
-  hostname_to_free = hostname;
-  cert_wild_card_to_free = cert_wild_card;
-  delim = strdup(".");
-  wildchar = strdup("*");
-
-  verb_debug ("V: Inspecting '%s' for possible wildcard match against '%s'",
-         hostname, cert_wild_card);
-
-  // By default we have not processed any labels
-  label_count = dns_label_count(cert_wild_card, delim);
-
-  // By default we have no match
-  ok = 0;
-  wildcard_encountered = 0;
-  // First - do we have labels? If not, we refuse to even try to match
-  if ((NULL != strpbrk(cert_wild_card, delim)) &&
-      (NULL != strpbrk(hostname, delim)) &&
-      (label_count <= ((uint32_t)RFC2595_MIN_LABEL_COUNT)))
-  {
-    if (wildchar[0] == cert_wild_card[0])
-    {
-      verb_debug ("V: Found wildcard in at start of provided certificate name");
-      do
-      {
-        // Skip over the bytes between the first char and until the next label
-        wildcard_label = strsep(&cert_wild_card, delim);
-        expected_label = strsep(&hostname, delim);
-        if (NULL != wildcard_label &&
-            NULL != expected_label &&
-            NULL != hostname &&
-            NULL != cert_wild_card)
-        {
-          // Now we only consider this wildcard valid if the rest of the
-          // hostnames match verbatim
-          verb_debug ("V: Attempting match of '%s' against '%s'",
-                 expected_label, wildcard_label);
-          // This is the case where we have a label that begins with wildcard
-          // Furthermore, we only allow this for the first label
-          if (wildcard_label[0] == wildchar[0] &&
-              0 == wildcard_encountered && 0 == ok)
-          {
-            verb_debug ("V: Forced match of '%s' against '%s'", expected_label, wildcard_label);
-            wildcard_encountered = 1;
-          } else {
-            verb_debug ("V: Attempting match of '%s' against '%s'",
-                   hostname, cert_wild_card);
-            if (0 == strcasecmp (expected_label, wildcard_label) &&
-                label_count >= ((uint32_t)RFC2595_MIN_LABEL_COUNT))
-            {
-              ok = 1;
-              verb_debug ("V: remaining labels match!");
-              break;
-            } else {
-              ok = 0;
-              verb_debug ("V: remaining labels do not match!");
-              break;
-            }
-          }
-        } else {
-          // We hit this case when we have a mismatched number of labels
-          verb_debug ("V: NULL label; no wildcard here");
-          break;
-        }
-      } while (0 != wildcard_encountered && label_count <= RFC2595_MIN_LABEL_COUNT);
-    } else {
-      verb_debug ("V: Not a RFC 2595 wildcard");
-    }
-  } else {
-    verb_debug ("V: Not a valid wildcard certificate");
-    ok = 0;
-  }
-  // Free our copies
-  free(wildchar);
-  free(delim);
-  free(hostname_to_free);
-  free(cert_wild_card_to_free);
-  if (wildcard_encountered & ok && label_count >= RFC2595_MIN_LABEL_COUNT)
-  {
-    verb_debug ("V: wildcard match of %s against %s",
-          orig_hostname, orig_cert_wild_card);
-    return (wildcard_encountered & ok);
-  } else {
-    verb_debug ("V: wildcard match failure of %s against %s",
-          orig_hostname, orig_cert_wild_card);
-    return 0;
-  }
 }
 #endif
 
 #ifndef USE_POLARSSL
-/**
- This extracts the first commonName and checks it against hostname.
-*/
 uint32_t
-check_cn (SSL *ssl, const char *hostname)
-{
-  int ok = 0;
-  int ret;
-  char *cn_buf;
-  X509 *certificate;
-  X509_NAME *xname;
-
-  // We cast this to cast away g++ complaining about the following:
-  // error: invalid conversion from ‘void*’ to ‘char*’
-  cn_buf = (char *) xmalloc(TLSDATE_HOST_NAME_MAX + 1);
-
-  certificate = SSL_get_peer_certificate(ssl);
-  if (NULL == certificate)
-  {
-    die ("Unable to extract certificate");
-  }
-
-  memset(cn_buf, '\0', (TLSDATE_HOST_NAME_MAX + 1));
-  xname = X509_get_subject_name(certificate);
-  ret = X509_NAME_get_text_by_NID(xname, NID_commonName,
-                                  cn_buf, TLSDATE_HOST_NAME_MAX);
-
-  if (-1 == ret || ret != (int) strlen(cn_buf))
-  {
-    die ("Unable to extract commonName");
-  }
-  if (strcasecmp(cn_buf, hostname))
-  {
-    verb ("V: commonName mismatch! Expected: %s - received: %s",
-          hostname, cn_buf);
-  } else {
-    verb ("V: commonName matched: %s", cn_buf);
-    ok = 1;
-  }
-
-  X509_NAME_free(xname);
-  X509_free(certificate);
-  xfree(cn_buf);
-
-  return ok;
-}
-
-/**
- Search for a hostname match in the SubjectAlternativeNames.
-*/
-uint32_t
-check_san (SSL *ssl, const char *hostname)
+check_name (SSL *ssl, const char *hostname)
 {
   X509 *cert;
-  int extcount, ok = 0;
-  /* What an OpenSSL mess ... */
+  uint32_t ret;
+
   if (NULL == (cert = SSL_get_peer_certificate(ssl)))
   {
     die ("Getting certificate failed");
   }
 
-  if ((extcount = X509_get_ext_count(cert)) > 0)
-  {
-    int i;
-    for (i = 0; i < extcount; ++i)
-    {
-      const char *extstr;
-      X509_EXTENSION *ext;
-      ext = X509_get_ext(cert, i);
-      extstr = OBJ_nid2sn(OBJ_obj2nid(X509_EXTENSION_get_object(ext)));
-
-      if (!strcmp(extstr, "subjectAltName"))
-      {
-
-        int j;
-        void *extvalstr;
-        const unsigned char *tmp;
-
-        STACK_OF(CONF_VALUE) *val;
-        CONF_VALUE *nval;
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-        const
-#endif
-        X509V3_EXT_METHOD *method;
-
-        if (!(method = X509V3_EXT_get(ext)))
-        {
-          break;
-        }
-
-        tmp = ext->value->data;
-        if (method->it)
-        {
-          extvalstr = ASN1_item_d2i(NULL, &tmp, ext->value->length,
-                                    ASN1_ITEM_ptr(method->it));
-        } else {
-          extvalstr = method->d2i(NULL, &tmp, ext->value->length);
-        }
-
-        if (!extvalstr)
-        {
-          break;
-        }
-
-        if (method->i2v)
-        {
-          val = method->i2v(method, extvalstr, NULL);
-          for (j = 0; j < sk_CONF_VALUE_num(val); ++j)
-          {
-            nval = sk_CONF_VALUE_value(val, j);
-            if ((!strcasecmp(nval->name, "DNS") &&
-                !strcasecmp(nval->value, hostname) ) ||
-                (!strcasecmp(nval->name, "iPAddress") &&
-                !strcasecmp(nval->value, hostname)))
-            {
-              verb ("V: subjectAltName matched: %s, type: %s", nval->value, nval->name); // We matched this; so it's safe to print
-              ok = 1;
-              break;
-            }
-            // Attempt to match subjectAltName DNS names
-            if (!strcasecmp(nval->name, "DNS"))
-            {
-              ok = check_wildcard_match_rfc2595(hostname, nval->value);
-              if (ok)
-              {
-                break;
-              }
-            }
-            verb_debug ("V: subjectAltName found but not matched: %s, type: %s",
-                nval->value, sanitize_string(nval->name));
-          }
-        }
-      } else {
-        verb_debug ("V: found non subjectAltName extension");
-      }
-      if (ok)
-      {
-        break;
-      }
-    }
-  } else {
-    verb_debug ("V: no X509_EXTENSION field(s) found");
-  }
-  X509_free(cert);
-  return ok;
-}
-
-uint32_t
-check_name (SSL *ssl, const char *hostname)
-{
-  uint32_t ret;
-  ret = check_cn(ssl, hostname);
-  ret += check_san(ssl, hostname);
-  if (0 != ret && 0 < ret)
+  ret = X509_check_host(cert, hostname, 0, 0, NULL);
+  if (ret == 1)
   {
     verb ("V: hostname verification passed");
   } else {
     die ("hostname verification failed for host %s!", host);
   }
+  X509_free(cert);
   return ret;
 }
 #endif
@@ -1029,11 +697,11 @@ check_key_length (SSL *ssl)
   }
 
   key_bits = get_certificate_keybits (public_key);
-  if (MIN_PUB_KEY_LEN >= key_bits && public_key->type != EVP_PKEY_EC)
+  if (MIN_PUB_KEY_LEN >= key_bits && EVP_PKEY_id(public_key) != EVP_PKEY_EC)
   {
     die ("Unsafe public key size: %d bits", key_bits);
   } else {
-     if (public_key->type == EVP_PKEY_EC)
+     if (EVP_PKEY_id(public_key) == EVP_PKEY_EC)
        if(key_bits >= MIN_ECC_PUB_KEY_LEN
           && key_bits <= MAX_ECC_PUB_KEY_LEN)
        {
@@ -1271,34 +939,14 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion, int http)
   SSL_load_error_strings();
   SSL_library_init();
 
-  ctx = NULL;
-  if (0 == strcmp("sslv23", protocol))
-  {
-    verb ("V: using SSLv23_client_method()");
-    ctx = SSL_CTX_new(SSLv23_client_method());
-  } else if (0 == strcmp("sslv3", protocol))
-  {
-    verb ("V: using SSLv3_client_method()");
-    ctx = SSL_CTX_new(SSLv3_client_method());
-  } else if (0 == strcmp("tlsv1", protocol))
-  {
-    verb ("V: using TLSv1_client_method()");
-    ctx = SSL_CTX_new(TLSv1_client_method());
-  } else if (0 == strcmp("tlsv11", protocol))
-  {
-    verb ("V: using TLSv1_1_client_method()");
-    ctx = SSL_CTX_new(TLSv1_1_client_method());
-  } else if (0 == strcmp("tlsv12", protocol))
-  {
-    verb ("V: using TLSv1_2_client_method()");
-    ctx = SSL_CTX_new(TLSv1_2_client_method());
-  } else
-    die("Unsupported protocol `%s'", protocol);
-
+  ctx = SSL_CTX_new(TLS_client_method());
   if (ctx == NULL)
     die("OpenSSL failed to support protocol `%s'", protocol);
 
-  verb("V: Using OpenSSL for SSL");
+  if (!http)
+    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+
+  verb("V: Using OpenSSL for SSL (" OPENSSL_VERSION_TEXT ")");
   if (ca_racket)
   {
     if (-1 == stat(ca_cert_container, &statbuf))
@@ -1353,7 +1001,7 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion, int http)
 
   // from /usr/include/openssl/ssl3.h
   //  ssl->s3->server_random is an unsigned char of 32 bits
-  memcpy(&result_time, ssl->s3->server_random, sizeof (uint32_t));
+  SSL_get_server_random(ssl, (unsigned char *)&result_time, sizeof result_time);
   verb("V: In TLS response, T=%lu", (unsigned long)ntohl(result_time));
 
   if (http) {
