@@ -22,10 +22,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 CONFIG_EXTRA
 AX_PLATFORM
 
-dnl Here we should build a small program to fetch the build system time in a portable
-dnl manner. We have no Win32 users, we can fix this if we ever find one that
-dnl cares.
-dnl
 dnl In Debian GNU/Linux and other Debian GNU/* systems, we wish to make this a
 dnl deterministic build process. There is only one part of the build process that
 dnl is entropic and that is this COMPILE_DATE value. We want to check to see if
@@ -33,14 +29,14 @@ dnl COMPILE_DATE is defined by the debian/rules file and if it is - we want to u
 dnl the value provided by the environment. If it isn't we'll use one that we
 dnl generate here.
 dnl
-echo "checking for \$COMPILE_DATE in the environment..."
+dnl If we don't find COMPILE_DATE then we fall back to the standardised
+dnl SOURCE_DATE_EPOCH (which AX_BUILD_DATE_EPOCH fetches for us)
+AC_MSG_CHECKING([for \$COMPILE_DATE in the environment])
 if test "${COMPILE_DATE+set}" = set; then
-  echo "...we've found \$COMPILE_DATE in the environment."
-  echo "...\$COMPILE_DATE is set to: $COMPILE_DATE"
+  AC_MSG_RESULT([yes])
 else
-  echo "...no \$COMPILE_DATE found in our build environment. Generating now..."
-  COMPILE_DATE=`date +%s`
-  echo "...\$COMPILE_DATE is set to: $COMPILE_DATE"
+  AC_MSG_RESULT([no])
+  AX_BUILD_DATE_EPOCH([COMPILE_DATE])
 fi
 
 AC_SUBST([COMPILE_DATE])
