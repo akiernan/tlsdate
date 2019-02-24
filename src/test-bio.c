@@ -16,6 +16,9 @@
 #include <string.h>
 
 #include "src/test-bio.h"
+#ifndef USE_POLARSSL
+#include "openssl10-compat.h"
+#endif
 #include "src/util.h"
 
 int verbose;

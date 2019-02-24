@@ -100,6 +100,7 @@ know:
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include "openssl10-compat.h"
 #endif
 
 static void
@@ -537,12 +538,16 @@ get_certificate_keybits (EVP_PKEY *public_key)
     case EVP_PKEY_EC:
       verb("V: key type: EVP_PKEY_EC");
       break;
+#ifdef EVP_PKEY_ED448
     case EVP_PKEY_ED448:
       verb("V: key type: EVP_PKEY_ED448");
       break;
+#endif
+#ifdef EVP_PKEY_ED25519
     case EVP_PKEY_ED25519:
       verb("V: key type: EVP_PKEY_ED25519");
       break;
+#endif
     // Should we also care about EVP_PKEY_HMAC and EVP_PKEY_CMAC?
     default:
       key_bits = 0;
@@ -943,8 +948,10 @@ run_ssl (uint32_t *time_map, int time_is_an_illusion, int http)
   if (ctx == NULL)
     die("OpenSSL failed to support protocol `%s'", protocol);
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
   if (!http)
     SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+#endif
 
   verb("V: Using OpenSSL for SSL (" OPENSSL_VERSION_TEXT ")");
   if (ca_racket)

@@ -36,6 +36,9 @@
 #endif
 
 #include "src/proxy-bio.h"
+#ifndef USE_POLARSSL
+#include "openssl10-compat.h"
+#endif
 
 int socks4a_connect (BIO *b);
 int socks5_connect (BIO *b);
