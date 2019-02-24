@@ -71,9 +71,6 @@ maintainer-clean-local:
 	@find ./ | $(GREP) \~$$ | xargs rm -f
 
 certdir =  @TLSDATE_CA_ROOTS@
-cert_DATA =
-#cert_DATA = ca-roots/tlsdate-ca-roots.conf
-EXTRA_DIST+= $(cert_DATA)
 
 confdir = @TLSDATE_CONF_DIR@
 if TARGET_LINUX
@@ -118,19 +115,8 @@ lcov:
 valgrind_test:
 	TESTS_ENVIRONMENT="./libtool --mode=execute valgrind  --trace-children=yes --leak-check=full" ./src/tlsdate -v -V -n -H encrypted.google.com
 
-# This allows us to parse the Mozilla NSS CA trusted root list and ensures we
-# respect the trust bits as they are set - using them directly without the
-# context is dangerous. This gives us a basic set of CA roots to trust for use
-# with tlsdate without relying on any system CA list.
-# You'll need agl's extract-nss-root-certs to recreate this file:
-# https://github.com/agl/extract-nss-root-certs
-update_ca_root_data:
-	curl https://mxr.mozilla.org/mozilla/source/security/nss/lib/ckfw/builtins/certdata.txt\?raw\=1 -o ca-roots/certdata.txt
-	go run ~/Documents/code/git/extract-nss-root-certs/convert_mozilla_certdata.go ca-roots/certdata.txt > ca-roots/tlsdate-ca-roots.conf
-	rm ca-roots/certdata.txt
-
 test_run:
-	./src/tlsdate-helper google.com 443 tlsv1 racket verbose ca-roots/tlsdate-ca-roots.conf dont-set-clock showtime no-fun holdfast none
+	./src/tlsdate-helper google.com 443 tlsv1 racket verbose dont-set-clock showtime no-fun holdfast none
 
 BUILT_SOURCES+= src/configmake.h
 noinst_HEADERS+= src/configmake.h
