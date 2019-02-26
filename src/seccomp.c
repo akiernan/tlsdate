@@ -89,6 +89,10 @@ enable_setter_seccomp (void)
     SC_ALLOW (read),
     SC_ALLOW (write),
     SC_ALLOW (pwritev),
+    SC_ALLOW (getpid),
+#ifdef __NR_send
+    SC_ALLOW (send),
+#endif
 
     SC_ALLOW (adjtimex),
     SC_ALLOW (gettimeofday),
