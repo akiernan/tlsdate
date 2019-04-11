@@ -46,6 +46,9 @@
 
 const char *kTempSuffix = DEFAULT_DAEMON_TMPSUFFIX;
 
+int verbose;
+int verbose_debug;
+
 /** helper function to print message and die */
 void
 die (const char *fmt, ...)

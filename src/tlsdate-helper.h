@@ -43,9 +43,6 @@
 #include <openssl/x509v3.h>
 #endif
 
-int verbose;
-int verbose_debug;
-
 #include "src/util.h"
 
 /** Name of user that we feel safe to run SSL handshake with. */
