@@ -43,8 +43,6 @@
 #include <openssl/x509v3.h>
 #endif
 
-#include "src/util.h"
-
 /** Name of user that we feel safe to run SSL handshake with. */
 #ifndef UNPRIV_USER
 #define UNPRIV_USER "nobody"

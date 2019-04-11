@@ -84,6 +84,7 @@ know:
 #include "src/proxy-polarssl.h"
 #endif
 
+#include "src/util.h"
 #include "src/compat/clock.h"
 
 #ifndef MAP_ANONYMOUS
