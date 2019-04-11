@@ -133,8 +133,6 @@ uint32_t check_name (SSL *ssl, const char *hostname);
 uint32_t verify_signature (SSL *ssl, const char *hostname);
 void check_key_length (SSL *ssl);
 void inspect_key (SSL *ssl, const char *hostname);
-void check_key_length (SSL *ssl);
-void inspect_key (SSL *ssl, const char *hostname);
 #endif
 uint32_t dns_label_count (char *label, char *delim);
 uint32_t check_wildcard_match_rfc2595 (const char *orig_hostname,
