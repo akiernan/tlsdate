@@ -191,7 +191,7 @@ struct state
   int exitting;
 };
 
-char timestamp_path[PATH_MAX];
+extern char timestamp_path[PATH_MAX];
 
 int is_sane_time (time_t ts);
 int load_disk_timestamp (const char *path, time_t * t);
